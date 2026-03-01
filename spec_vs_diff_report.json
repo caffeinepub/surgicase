@@ -1,0 +1,15 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-03-01T04:15:41.145Z",
+  "summary": "Both REQ-1 and REQ-2 appear to be implemented. The diff shows CalendarCaseCard now has an onCardClick prop and click handler that fires with the caseId, DashboardPage passes the callback up, App.tsx wires targetCaseId state, CasesPage handles scroll/highlight via useEffect, and CalendarCaseCard now renders ownerLastName and presentingComplaint fields.",
+  "missing_requirements": [],
+  "hallucinated_features": [],
+  "confidence": 0.92,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/components/Cases/CasesPage.tsx",
+    "frontend/src/components/Dashboard/CalendarCaseCard.tsx",
+    "project_state.json"
+  ]
+}

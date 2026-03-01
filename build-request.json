@@ -1,0 +1,60 @@
+{
+  "kind": "build_request",
+  "title": "Fix Dashboard card navigation and display owner/complaint on card",
+  "projectName": "SurgiCase",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Fix the click handler on CalendarCaseCard so that clicking a card on the Dashboard correctly sets the targetCaseId state in App.tsx and navigates the user to the Cases page, scrolling to and highlighting the corresponding case card.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "clicking a card on the Dashboard does not take you straight to the corresponding case on the Cases page"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking any CalendarCaseCard on the Dashboard navigates the user to the Cases page.",
+        "The Cases page scrolls to and highlights the case that was clicked.",
+        "The targetCaseId prop/state is correctly passed from CalendarCaseCard up through DashboardPage to App.tsx, triggering the page switch.",
+        "Navigation works for all cases visible on the Dashboard calendar."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Display the owner name and presenting complaint (from the VetCase data) on each CalendarCaseCard on the Dashboard, in addition to the existing pet name, MRN, and species/sex information.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "display owner name and presenting complaint on the card on the dashboard"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each CalendarCaseCard shows the owner name if it is available on the case.",
+        "Each CalendarCaseCard shows the presenting complaint if it is available on the case.",
+        "Owner name and presenting complaint are legible and fit within the compact card layout without breaking the calendar grid.",
+        "If owner name or presenting complaint is absent for a case, those fields are gracefully omitted or shown as empty."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify files under frontend/src/hooks/ (useInternetIdentity.ts, useActor.ts) or frontend/src/main.tsx.",
+    "Do not modify files under frontend/src/components/ui/.",
+    "All navigation state must remain in App.tsx using the existing targetCaseId pattern."
+  ],
+  "nonGoals": [
+    "Adding new backend fields or changing the VetCase data model.",
+    "Redesigning the Dashboard calendar layout.",
+    "Changing the Cases page filtering or sorting behavior."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-03-01T04:15:41.148Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 2,
+    "implemented": 2,
+    "items": [
+      {
+        "id": "REQ-1",
+        "summary": "Fix the click handler on CalendarCaseCard so that clicking a card on the Dashboard correctly sets the targetCaseId state in App.tsx and navigates the user to the Cases page, scrolling to and highlighting the corresponding case card.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/Dashboard/CalendarCaseCard.tsx",
+          "frontend/src/components/Dashboard/DashboardPage.tsx",
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/Dashboard/CalendarCaseCard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Display the owner name and presenting complaint (from the VetCase data) on each CalendarCaseCard on the Dashboard, in addition to the existing pet name, MRN, and species/sex information.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/Dashboard/CalendarCaseCard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/Dashboard/CalendarCaseCard.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/components/Cases/CasesPage.tsx",
+    "frontend/src/components/Dashboard/CalendarCaseCard.tsx",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-fix-the-click-handler-on-calendarcasecard-so-that-clicking-a-card-on-the-dashboard-correctly-sets-the-targetcaseid-state-in-app-tsx-and-navigates-the-user-to-the-cases-page-scrolling-to-and-highlighting-the-corresponding-case-card",
+      "featureTitle": "Fix the click handler on CalendarCaseCard so that clicking a card on the Dashboard correctly sets the targetCaseId state in App.tsx and navigates the user to the Cases page, scrolling to and highlighting the corresponding case card.",
+      "files": [
+        "frontend/src/components/Dashboard/CalendarCaseCard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-display-the-owner-name-and-presenting-complaint-from-the-vetcase-data-on-each-calendarcasecard-on-the-dashboard-in-addition-to-the-existing-pet-name-mrn-and-species-sex-information",
+      "featureTitle": "Display the owner name and presenting complaint (from the VetCase data) on each CalendarCaseCard on the Dashboard, in addition to the existing pet name, MRN, and species/sex information.",
+      "files": [
+        "frontend/src/components/Dashboard/CalendarCaseCard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

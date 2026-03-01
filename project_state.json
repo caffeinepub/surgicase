@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "A case management web app with a Dashboard and Cases page. Dashboard cards should navigate to the corresponding case and display owner name and presenting complaint.",
+  "architectural_notes": [
+    "Dashboard cards link to Cases page; navigation must pass case identifier to scroll/highlight the correct case"
+  ],
+  "known_issues": [
+    "Clicking a Dashboard card does not navigate to the corresponding case on the Cases page"
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-fix-the-click-handler-on-calendarcasecard-so-that-clicking-a-card-on-the-dashboard-correctly-sets-the-targetcaseid-state-in-app-tsx-and-navigates-the-user-to-the-cases-page-scrolling-to-and-highlighting-the-corresponding-case-card",
+      "title": "Fix the click handler on CalendarCaseCard so that clicking a card on the Dashboard correctly sets the targetCaseId state in App.tsx and navigates the user to the Cases page, scrolling to and highlighting the corresponding case card.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-the-owner-name-and-presenting-complaint-from-the-vetcase-data-on-each-calendarcasecard-on-the-dashboard-in-addition-to-the-existing-pet-name-mrn-and-species-sex-information",
+      "title": "Display the owner name and presenting complaint (from the VetCase data) on each CalendarCaseCard on the Dashboard, in addition to the existing pet name, MRN, and species/sex information.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Fix: clicking a card on Dashboard should navigate to the corresponding case on the Cases page",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Display owner name and presenting complaint on each Dashboard card",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "SurgiCase",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

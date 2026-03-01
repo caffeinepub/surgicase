@@ -1,0 +1,11 @@
+{
+  "frontend/src/App.tsx": "Root application component that manages auth state, page routing, and now tracks a `targetCaseId` state; clicking a dashboard case card calls `handleNavigateToCaseDetail` which sets the target ID and switches to the Cases page.",
+  "frontend/src/components/Dashboard/DashboardPage.tsx": "Weekly calendar dashboard that now accepts an `onNavigateToCaseDetail` prop and passes each `CalendarCaseCard` a callback that forwards the specific `caseId` (bigint) when clicked.",
+  "frontend/src/components/Cases/CasesPage.tsx": "Full cases list page with filtering, sorting, search, import/export, delete confirmation, and target-case scroll/highlight; fixes the TypeScript error by passing `onDelete` as a no-argument closure `() => setDeleteTarget(vetCase.caseId)` to match `CaseCard`'s `() => void` signature.",
+  "frontend/src/components/Cases/FilterBar.tsx": "Reusable filter and sort control bar with a search input, filter pill buttons (All, Complete, Histo, Imaging, Labs, Culture), and a sort toggle button (Oldest/Newest First).",
+  "frontend/src/components/Cases/TaskBadge.tsx": "Task badge component with icons and colors per task type; now supports an `iconOnly` prop that renders a smaller (24px) icon-only circular button without label text, used by the calendar card view.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for all backend operations including cases CRUD, user profile management, and `useToggleTaskComplete` mutation; fixes the import to use the correct `Task` type (not `Tasks`) from the backend interface.",
+  "frontend/src/utils/dateUtils.ts": "Date utility functions including formatting, parsing, age calculation, and new weekly calendar helpers: `getWeekStart`, `getWeekDays`, `formatCalendarDayHeader`, `isSameDay`, and `isToday`.",
+  "frontend/src/components/Dashboard/CalendarCaseCard.tsx": "Compact calendar case card showing pet name, MRN, species/sex, owner last name, presenting complaint (new), and task badge icons; clicking the card (outside task buttons) triggers the onCardClick callback to navigate to the Cases page.",
+  "frontend/src/index.css": "Global styles with OKLCH color system and component utilities; adds a `case-highlight` CSS class with a `case-highlight-fade` keyframe animation that pulses a blue ring and background tint then fades out over 2.5 seconds."
+}

@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* Blue-focused clinical palette */
+    --background: 0.98 0.003 240;
+    --foreground: 0.18 0.02 250;
+
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.02 250;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.02 250;
+
+    --primary: 0.52 0.18 255;
+    --primary-foreground: 1 0 0;
+
+    --secondary: 0.94 0.01 240;
+    --secondary-foreground: 0.25 0.03 250;
+
+    --muted: 0.95 0.008 240;
+    --muted-foreground: 0.52 0.02 250;
+
+    --accent: 0.93 0.015 240;
+    --accent-foreground: 0.25 0.03 250;
+
+    --destructive: 0.58 0.22 27;
+    --destructive-foreground: 1 0 0;
+
+    --border: 0.88 0.01 240;
+    --input: 0.88 0.01 240;
+    --ring: 0.52 0.18 255;
+
+    --chart-1: 0.52 0.18 255;
+    --chart-2: 0.6 0.118 184;
+    --chart-3: 0.398 0.07 227;
+    --chart-4: 0.828 0.189 84;
+    --chart-5: 0.769 0.188 70;
+
+    --sidebar: 0.97 0.005 240;
+    --sidebar-foreground: 0.18 0.02 250;
+    --sidebar-primary: 0.52 0.18 255;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.93 0.015 240;
+    --sidebar-accent-foreground: 0.25 0.03 250;
+    --sidebar-border: 0.88 0.01 240;
+    --sidebar-ring: 0.52 0.18 255;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Force light mode */
+  html {
+    color-scheme: light;
+  }
+}
+
+@layer components {
+  .surgi-card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
+
+  .surgi-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .task-badge-base {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-full transition-all duration-150 cursor-pointer select-none;
+  }
+
+  .complaint-box {
+    @apply rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900;
+  }
+
+  .notes-box {
+    @apply rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900;
+  }
+
+  .field-label {
+    @apply text-xs font-medium text-gray-500 uppercase tracking-wide;
+  }
+
+  .field-value {
+    @apply text-sm text-gray-800;
+  }
+
+  .inline-edit-input {
+    @apply w-full text-sm border border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white;
+  }
+
+  /* Case highlight animation — applied to the wrapper div in CasesPage */
+  .case-highlight {
+    border-radius: 0.75rem;
+    animation: case-highlight-fade 2.5s ease-out forwards;
+  }
+
+  @keyframes case-highlight-fade {
+    0% {
+      box-shadow: 0 0 0 3px oklch(0.52 0.18 255 / 0.8), 0 0 20px oklch(0.52 0.18 255 / 0.3);
+      background-color: oklch(0.93 0.06 255 / 0.4);
+    }
+    60% {
+      box-shadow: 0 0 0 3px oklch(0.52 0.18 255 / 0.5), 0 0 12px oklch(0.52 0.18 255 / 0.15);
+      background-color: oklch(0.93 0.06 255 / 0.2);
+    }
+    100% {
+      box-shadow: 0 0 0 0px oklch(0.52 0.18 255 / 0);
+      background-color: transparent;
+    }
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.88 0.01 240) transparent;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

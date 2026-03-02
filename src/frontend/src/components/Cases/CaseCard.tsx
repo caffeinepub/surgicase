@@ -102,10 +102,25 @@ interface CaseCardProps {
 
 function AppointmentsSection({ mrn }: { mrn: string }) {
   const [expanded, setExpanded] = useState(true);
+  const [expandedCompletedIds, setExpandedCompletedIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [appointmentToDelete, setAppointmentToDelete] =
     useState<VetAppointment | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] =
     useState<VetAppointment | null>(null);
+
+  const toggleCompletedExpanded = (id: string) => {
+    setExpandedCompletedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
   const { data: appointments = [], isLoading } = useGetAppointmentsByMRN(mrn);
   const deleteAppointment = useDeleteAppointment();
 
@@ -158,111 +173,151 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
           <div className="space-y-2">
             {sorted.map((appt) => {
               const apptAllDone = areAllApptTasksComplete(appt.tasks);
-              return (
+              const apptIdStr = String(appt.appointmentId);
+              const isCompletedExpanded = expandedCompletedIds.has(apptIdStr);
+              return apptAllDone ? (
+                /* Completed appointment — compact collapsed row, expandable */
+                <div
+                  key={apptIdStr}
+                  className="border border-green-200 rounded-lg bg-white group"
+                  data-ocid={`cases.appointment.item.${apptIdStr}`}
+                >
+                  {/* Header row */}
+                  <div className="px-3 py-1.5 flex items-center gap-2 relative">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCompletedExpanded(apptIdStr);
+                      }}
+                      className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                      aria-expanded={isCompletedExpanded}
+                      aria-label={
+                        isCompletedExpanded
+                          ? "Collapse completed appointment"
+                          : "Expand completed appointment to review tasks"
+                      }
+                      data-ocid={`cases.appointment.toggle.${apptIdStr}`}
+                    >
+                      <CalendarDays className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-gray-600">
+                        {appt.arrivalDate}
+                      </span>
+                      {appt.reason && (
+                        <span className="text-xs text-gray-500 italic truncate flex-1">
+                          {appt.reason}
+                        </span>
+                      )}
+                    </button>
+                    {/* Edit/Delete visible on hover */}
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAppointmentToEdit(appt);
+                        }}
+                        className="p-0.5 rounded text-gray-300 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                        title="Edit appointment"
+                        aria-label="Edit appointment"
+                        data-ocid={`cases.appointment.edit_button.${apptIdStr}`}
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAppointmentToDelete(appt);
+                        }}
+                        className="p-0.5 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="Delete appointment"
+                        aria-label="Delete appointment"
+                        data-ocid={`cases.appointment.delete_button.${apptIdStr}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <CheckCircle2
+                      className="w-4 h-4 text-green-500 flex-shrink-0"
+                      aria-label="All tasks complete"
+                    />
+                    {isCompletedExpanded ? (
+                      <ChevronUp className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    )}
+                  </div>
+                  {/* Expanded task review */}
+                  {isCompletedExpanded && (
+                    <div className="px-3 pb-2 border-t border-green-100 pt-2">
+                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1.5">
+                        Completed Tasks
+                      </p>
+                      <AppointmentTaskList
+                        appointmentId={appt.appointmentId}
+                        tasks={appt.tasks}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Incomplete appointment — full task list */
                 <div
                   key={String(appt.appointmentId)}
-                  className={`border rounded-lg px-2.5 py-2 group relative ${
-                    apptAllDone
-                      ? "bg-green-50 border-green-200"
-                      : "bg-teal-50 border-teal-100"
-                  }`}
+                  className="border border-teal-100 rounded-lg px-2.5 py-2 group relative bg-teal-50"
+                  data-ocid={`cases.appointment.item.${String(appt.appointmentId)}`}
                 >
                   {/* Appointment header */}
                   <div className="flex items-start gap-2">
                     <div className="flex-shrink-0 mt-0.5">
-                      <CalendarDays
-                        className={`w-3.5 h-3.5 ${apptAllDone ? "text-green-400" : "text-teal-500"}`}
-                      />
+                      <CalendarDays className="w-3.5 h-3.5 text-teal-500" />
                     </div>
                     <div className="flex-1 min-w-0 pr-14">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className={`text-xs font-semibold ${apptAllDone ? "text-green-700" : "text-teal-800"}`}
-                        >
+                        <span className="text-xs font-semibold text-teal-800">
                           {appt.arrivalDate}
                         </span>
                         {appt.reason && (
-                          <span
-                            className={`text-xs italic truncate ${apptAllDone ? "text-green-600" : "text-teal-700"}`}
-                          >
+                          <span className="text-xs italic truncate text-teal-700">
                             {appt.reason}
                           </span>
                         )}
                       </div>
                     </div>
-
-                    {/* Checkmark for completed, or edit/delete on hover */}
-                    {apptAllDone ? (
-                      <div className="absolute top-2 right-2 flex items-center gap-0.5">
-                        {/* Edit + Delete still accessible on hover when complete */}
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity mr-1">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setAppointmentToEdit(appt);
-                            }}
-                            className="p-0.5 rounded text-green-300 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                            title="Edit appointment"
-                            aria-label="Edit appointment"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setAppointmentToDelete(appt);
-                            }}
-                            className="p-0.5 rounded text-green-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                            title="Delete appointment"
-                            aria-label="Delete appointment"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        <CheckCircle2
-                          className="w-4 h-4 text-green-500 flex-shrink-0"
-                          aria-label="All tasks complete"
-                        />
-                      </div>
-                    ) : (
-                      <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAppointmentToEdit(appt);
-                          }}
-                          className="p-0.5 rounded text-teal-300 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                          title="Edit appointment"
-                          aria-label="Edit appointment"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAppointmentToDelete(appt);
-                          }}
-                          className="p-0.5 rounded text-teal-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                          title="Delete appointment"
-                          aria-label="Delete appointment"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
+                    <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAppointmentToEdit(appt);
+                        }}
+                        className="p-0.5 rounded text-teal-300 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                        title="Edit appointment"
+                        aria-label="Edit appointment"
+                        data-ocid={`cases.appointment.edit_button.${String(appt.appointmentId)}`}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAppointmentToDelete(appt);
+                        }}
+                        className="p-0.5 rounded text-teal-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="Delete appointment"
+                        aria-label="Delete appointment"
+                        data-ocid={`cases.appointment.delete_button.${String(appt.appointmentId)}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Appointment task list — only shown when tasks are NOT all complete */}
-                  {!apptAllDone && (
-                    <AppointmentTaskList
-                      appointmentId={appt.appointmentId}
-                      tasks={appt.tasks}
-                    />
-                  )}
+                  <AppointmentTaskList
+                    appointmentId={appt.appointmentId}
+                    tasks={appt.tasks}
+                  />
                 </div>
               );
             })}

@@ -113,9 +113,9 @@ const TASK_DEFINITIONS = [
 type TaskKey = (typeof TASK_DEFINITIONS)[number]["key"];
 
 function getSpeciesIconSrc(species: Species): string {
-  if (species === "canine") return "/assets/Dog Icon 3.ico";
-  if (species === "feline") return "/assets/Cat Icon 3.ico";
-  return "/assets/Other Icon 3.ico";
+  if (species === "canine") return "/assets/generated/dog-icon.png";
+  if (species === "feline") return "/assets/generated/cat-icon.png";
+  return "/assets/generated/other-icon.png";
 }
 
 interface DashboardPageProps {

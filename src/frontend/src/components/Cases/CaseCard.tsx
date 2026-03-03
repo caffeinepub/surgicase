@@ -109,10 +109,18 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     useState<VetAppointment | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] =
     useState<VetAppointment | null>(null);
-  // Optimistic local task overrides keyed by appointmentId string
+
+  // Optimistic local task overrides keyed by appointmentId string.
+  // Once a task has been locally toggled OR seeded, we never overwrite it
+  // from server data — so the UI always reflects the latest user action.
   const [localTaskOverrides, setLocalTaskOverrides] = useState<
     Record<string, import("../../types/case").TaskStatus>
   >({});
+
+  // Track which IDs have already been seeded from server data.
+  // Once seeded AND locally modified, we never re-seed from the server.
+  const seededRef = React.useRef<Set<string>>(new Set());
+  const modifiedRef = React.useRef<Set<string>>(new Set());
 
   const toggleCompletedExpanded = (id: string) => {
     setExpandedCompletedIds((prev) => {
@@ -126,10 +134,13 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     });
   };
 
+  // Called by AppointmentTaskList immediately (synchronously) when any task is toggled.
+  // This runs BEFORE the async server call, so the UI updates instantly.
   const handleLocalTasksChange = (
     apptIdStr: string,
     updated: import("../../types/case").TaskStatus,
   ) => {
+    modifiedRef.current.add(apptIdStr);
     setLocalTaskOverrides((prev) => ({ ...prev, [apptIdStr]: updated }));
   };
 
@@ -142,22 +153,30 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     return da - db;
   });
 
-  // Seed localTaskOverrides from server data whenever the appointments list
-  // changes (e.g. on initial load or after a refetch). This ensures appointments
-  // that are already fully complete on the server are immediately shown as
-  // collapsed without requiring a task toggle in the current session.
+  // Seed localTaskOverrides from server data ONLY for appointments that have
+  // not yet been seeded. Once seeded, server refetches can only update
+  // appointments that have NOT been locally modified this session.
   React.useEffect(() => {
     if (appointments.length === 0) return;
     setLocalTaskOverrides((prev) => {
       const next = { ...prev };
+      let changed = false;
       for (const appt of appointments) {
         const id = String(appt.appointmentId);
-        // Only seed if we don't already have a local override for this appt
-        if (!(id in next)) {
+        if (!seededRef.current.has(id)) {
+          // First time seeing this appointment — seed from server
           next[id] = appt.tasks;
+          seededRef.current.add(id);
+          changed = true;
+        } else if (!modifiedRef.current.has(id)) {
+          // Already seeded but not locally modified — allow server to refresh
+          // (e.g. another session updated the task)
+          next[id] = appt.tasks;
+          changed = true;
         }
+        // If locally modified, NEVER overwrite with server data
       }
-      return next;
+      return changed ? next : prev;
     });
   }, [appointments]);
 
@@ -290,6 +309,7 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
                       </p>
                       <AppointmentTaskList
                         appointmentId={appt.appointmentId}
+                        mrn={mrn}
                         tasks={effectiveTasks}
                         onTasksChange={(updated) =>
                           handleLocalTasksChange(apptIdStr, updated)
@@ -353,6 +373,7 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
                   </div>
                   <AppointmentTaskList
                     appointmentId={appt.appointmentId}
+                    mrn={mrn}
                     tasks={effectiveTasks}
                     onTasksChange={(updated) =>
                       handleLocalTasksChange(apptIdStr, updated)

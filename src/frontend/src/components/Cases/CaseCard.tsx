@@ -109,6 +109,10 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     useState<VetAppointment | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] =
     useState<VetAppointment | null>(null);
+  // Optimistic local task overrides keyed by appointmentId string
+  const [localTaskOverrides, setLocalTaskOverrides] = useState<
+    Record<string, import("../../types/case").TaskStatus>
+  >({});
 
   const toggleCompletedExpanded = (id: string) => {
     setExpandedCompletedIds((prev) => {
@@ -121,6 +125,14 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
       return next;
     });
   };
+
+  const handleLocalTasksChange = (
+    apptIdStr: string,
+    updated: import("../../types/case").TaskStatus,
+  ) => {
+    setLocalTaskOverrides((prev) => ({ ...prev, [apptIdStr]: updated }));
+  };
+
   const { data: appointments = [], isLoading } = useGetAppointmentsByMRN(mrn);
   const deleteAppointment = useDeleteAppointment();
 
@@ -172,8 +184,11 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
         {expanded && (
           <div className="space-y-2">
             {sorted.map((appt) => {
-              const apptAllDone = areAllApptTasksComplete(appt.tasks);
               const apptIdStr = String(appt.appointmentId);
+              // Use local optimistic tasks if available, otherwise server data
+              const effectiveTasks =
+                localTaskOverrides[apptIdStr] ?? appt.tasks;
+              const apptAllDone = areAllApptTasksComplete(effectiveTasks);
               const isCompletedExpanded = expandedCompletedIds.has(apptIdStr);
               return apptAllDone ? (
                 /* Completed appointment — compact collapsed row, expandable */
@@ -256,7 +271,10 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
                       </p>
                       <AppointmentTaskList
                         appointmentId={appt.appointmentId}
-                        tasks={appt.tasks}
+                        tasks={effectiveTasks}
+                        onTasksChange={(updated) =>
+                          handleLocalTasksChange(apptIdStr, updated)
+                        }
                       />
                     </div>
                   )}
@@ -316,7 +334,10 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
                   </div>
                   <AppointmentTaskList
                     appointmentId={appt.appointmentId}
-                    tasks={appt.tasks}
+                    tasks={effectiveTasks}
+                    onTasksChange={(updated) =>
+                      handleLocalTasksChange(apptIdStr, updated)
+                    }
                   />
                 </div>
               );

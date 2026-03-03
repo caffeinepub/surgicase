@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useUpdateAppointmentTask } from "../../hooks/useQueries";
 import type { TaskKey, TaskStatus } from "../../types/case";
 import TaskBadge from "./TaskBadge";
@@ -18,20 +18,45 @@ const APPOINTMENT_TASK_KEYS: TaskKey[] = [
 interface AppointmentTaskListProps {
   appointmentId: bigint;
   tasks: TaskStatus;
+  onTasksChange?: (updated: TaskStatus) => void;
 }
 
 export default function AppointmentTaskList({
   appointmentId,
   tasks,
+  onTasksChange,
 }: AppointmentTaskListProps) {
+  // Keep a local optimistic copy so the UI responds instantly without waiting
+  // for the ICP round-trip to complete.
+  const [localTasks, setLocalTasks] = useState<TaskStatus>(tasks);
   const { mutate: updateTask, isPending } = useUpdateAppointmentTask();
 
+  // Sync from server whenever server data changes (e.g. after refetch)
+  useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
+
   const handleToggle = (taskKey: TaskKey, currentValue: boolean) => {
-    updateTask({
-      appointmentId,
-      taskName: taskKey,
-      isCompleted: !currentValue,
-    });
+    const newValue = !currentValue;
+    const updated = { ...localTasks, [taskKey]: newValue };
+    // Apply optimistically first
+    setLocalTasks(updated);
+    onTasksChange?.(updated);
+
+    updateTask(
+      {
+        appointmentId,
+        taskName: taskKey,
+        isCompleted: newValue,
+      },
+      {
+        onError: () => {
+          // Roll back on failure
+          setLocalTasks(localTasks);
+          onTasksChange?.(localTasks);
+        },
+      },
+    );
   };
 
   return (
@@ -44,9 +69,9 @@ export default function AppointmentTaskList({
           <TaskBadge
             key={key}
             taskKey={key}
-            completed={tasks[key]}
+            completed={localTasks[key]}
             onClick={
-              isPending ? undefined : () => handleToggle(key, tasks[key])
+              isPending ? undefined : () => handleToggle(key, localTasks[key])
             }
             showLabel={true}
           />

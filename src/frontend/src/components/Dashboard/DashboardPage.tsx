@@ -14,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Beaker,
   Bell,
@@ -33,13 +34,12 @@ import {
   Trash2,
 } from "lucide-react";
 import React, { useState, useMemo } from "react";
+import { useActor } from "../../hooks/useActor";
 import {
   useDeleteAppointment,
   useGetAppointments,
-  useUpdateAppointmentTask,
 } from "../../hooks/useQueries";
 import type { VetAppointment } from "../../types/appointment";
-import type { Species } from "../../types/case";
 import { areAllTasksComplete } from "../../types/case";
 import {
   formatCalendarDayHeader,
@@ -112,12 +112,6 @@ const TASK_DEFINITIONS = [
 
 type TaskKey = (typeof TASK_DEFINITIONS)[number]["key"];
 
-function getSpeciesIconSrc(species: Species): string {
-  if (species === "canine") return "/assets/generated/dog-icon.png";
-  if (species === "feline") return "/assets/generated/cat-icon.png";
-  return "/assets/generated/other-icon.png";
-}
-
 interface DashboardPageProps {
   onNavigateToCaseDetail: (caseId: bigint) => void;
 }
@@ -127,14 +121,62 @@ interface AppointmentTaskBadgesProps {
 }
 
 function AppointmentTaskBadges({ appointment }: AppointmentTaskBadgesProps) {
-  const updateTask = useUpdateAppointmentTask();
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const [pendingKeys, setPendingKeys] = useState<Set<TaskKey>>(new Set());
 
-  const handleToggle = (taskKey: TaskKey, currentValue: boolean) => {
-    updateTask.mutate({
-      appointmentId: appointment.appointmentId,
-      taskName: taskKey,
-      isCompleted: !currentValue,
-    });
+  const handleToggle = async (taskKey: TaskKey, currentValue: boolean) => {
+    if (pendingKeys.has(taskKey)) return;
+    const newValue = !currentValue;
+
+    // 1. Optimistically update both appointment caches immediately
+    const patchFn = (
+      old: VetAppointment[] | undefined,
+    ): VetAppointment[] | undefined => {
+      if (!old) return old;
+      return old.map((a) => {
+        if (a.appointmentId !== appointment.appointmentId) return a;
+        return { ...a, tasks: { ...a.tasks, [taskKey]: newValue } };
+      });
+    };
+    queryClient.setQueryData<VetAppointment[]>(["appointments"], patchFn);
+    queryClient.setQueryData<VetAppointment[]>(
+      ["appointments-by-mrn", appointment.mrn],
+      patchFn,
+    );
+
+    setPendingKeys((prev) => new Set([...prev, taskKey]));
+
+    try {
+      if (!actor) throw new Error("Actor not available");
+      await actor.toggleAppointmentTaskComplete(
+        appointment.appointmentId,
+        taskKey,
+        newValue,
+      );
+    } catch {
+      // Roll back on failure
+      const rollbackFn = (
+        old: VetAppointment[] | undefined,
+      ): VetAppointment[] | undefined => {
+        if (!old) return old;
+        return old.map((a) => {
+          if (a.appointmentId !== appointment.appointmentId) return a;
+          return { ...a, tasks: { ...a.tasks, [taskKey]: currentValue } };
+        });
+      };
+      queryClient.setQueryData<VetAppointment[]>(["appointments"], rollbackFn);
+      queryClient.setQueryData<VetAppointment[]>(
+        ["appointments-by-mrn", appointment.mrn],
+        rollbackFn,
+      );
+    } finally {
+      setPendingKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(taskKey);
+        return next;
+      });
+    }
   };
 
   return (
@@ -154,7 +196,7 @@ function AppointmentTaskBadges({ appointment }: AppointmentTaskBadgesProps) {
                   e.stopPropagation();
                   handleToggle(task.key, isCompleted);
                 }}
-                disabled={updateTask.isPending}
+                disabled={pendingKeys.has(task.key)}
                 className={`
                                     inline-flex items-center justify-center w-5 h-5 rounded-full border transition-all
                                     hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
@@ -210,14 +252,6 @@ function AppointmentCard({
         }}
       >
         <div className="flex items-center gap-1.5 mb-0.5 pr-10">
-          <img
-            src={getSpeciesIconSrc(appointment.species)}
-            alt={appointment.species}
-            className={`w-4 h-4 object-contain flex-shrink-0 ${allTasksDone ? "grayscale opacity-60" : ""}`}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
           <span
             className={`font-bold truncate ${allTasksDone ? "text-gray-400 line-through" : "text-gray-900"} ${hasLinkedCase && !allTasksDone ? "hover:text-teal-700 hover:underline" : ""}`}
           >

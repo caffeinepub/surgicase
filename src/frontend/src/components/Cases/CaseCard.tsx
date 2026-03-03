@@ -55,19 +55,11 @@ const SEX_LABELS: Record<Sex, string> = {
   femaleSpayed: "Female (Spayed)",
 };
 
-function getSpeciesIconSrc(species: Species): string {
-  if (species === "canine") return "/assets/generated/dog-icon.png";
-  if (species === "feline") return "/assets/generated/cat-icon.png";
-  return "/assets/generated/other-icon.png";
-}
-
 interface SpeciesBadgeProps {
   species: Species;
 }
 
 function SpeciesBadge({ species }: SpeciesBadgeProps) {
-  const iconSrc = getSpeciesIconSrc(species);
-
   const colors: Record<Species, string> = {
     canine: "bg-amber-50 text-amber-700 border-amber-200",
     feline: "bg-violet-50 text-violet-700 border-violet-200",
@@ -76,16 +68,8 @@ function SpeciesBadge({ species }: SpeciesBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${colors[species]}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${colors[species]}`}
     >
-      <img
-        src={iconSrc}
-        alt={species}
-        className="w-3.5 h-3.5 object-contain"
-        onError={(e) => {
-          (e.target as HTMLImageElement).style.display = "none";
-        }}
-      />
       {SPECIES_LABELS[species]}
     </span>
   );
@@ -111,16 +95,15 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     useState<VetAppointment | null>(null);
 
   // Optimistic local task overrides keyed by appointmentId string.
-  // Once a task has been locally toggled OR seeded, we never overwrite it
-  // from server data — so the UI always reflects the latest user action.
+  // The local state is the single source of truth for task display and collapse logic.
+  // Server data is only used to seed on first encounter; after that, local state wins.
   const [localTaskOverrides, setLocalTaskOverrides] = useState<
     Record<string, import("../../types/case").TaskStatus>
   >({});
 
-  // Track which IDs have already been seeded from server data.
-  // Once seeded AND locally modified, we never re-seed from the server.
+  // seededRef tracks which appointment IDs have been initialized from server data.
+  // Once seeded, we NEVER overwrite from the server again — local optimistic state wins.
   const seededRef = React.useRef<Set<string>>(new Set());
-  const modifiedRef = React.useRef<Set<string>>(new Set());
 
   const toggleCompletedExpanded = (id: string) => {
     setExpandedCompletedIds((prev) => {
@@ -136,11 +119,13 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
 
   // Called by AppointmentTaskList immediately (synchronously) when any task is toggled.
   // This runs BEFORE the async server call, so the UI updates instantly.
+  // The appointment id is added to seededRef here so subsequent server refetches
+  // cannot overwrite the optimistic state.
   const handleLocalTasksChange = (
     apptIdStr: string,
     updated: import("../../types/case").TaskStatus,
   ) => {
-    modifiedRef.current.add(apptIdStr);
+    seededRef.current.add(apptIdStr); // prevent any future re-seed from server
     setLocalTaskOverrides((prev) => ({ ...prev, [apptIdStr]: updated }));
   };
 
@@ -153,9 +138,9 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     return da - db;
   });
 
-  // Seed localTaskOverrides from server data ONLY for appointments that have
-  // not yet been seeded. Once seeded, server refetches can only update
-  // appointments that have NOT been locally modified this session.
+  // Seed localTaskOverrides from server data ONLY for appointments not yet seeded.
+  // Once an appointment has been seeded (either from server or via local toggle),
+  // server refetches are completely ignored for that appointment.
   React.useEffect(() => {
     if (appointments.length === 0) return;
     setLocalTaskOverrides((prev) => {
@@ -164,17 +149,12 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
       for (const appt of appointments) {
         const id = String(appt.appointmentId);
         if (!seededRef.current.has(id)) {
-          // First time seeing this appointment — seed from server
+          // First time seeing this appointment — seed from server and lock it
           next[id] = appt.tasks;
           seededRef.current.add(id);
           changed = true;
-        } else if (!modifiedRef.current.has(id)) {
-          // Already seeded but not locally modified — allow server to refresh
-          // (e.g. another session updated the task)
-          next[id] = appt.tasks;
-          changed = true;
         }
-        // If locally modified, NEVER overwrite with server data
+        // Already seeded (from server or local toggle) — NEVER overwrite
       }
       return changed ? next : prev;
     });
@@ -513,16 +493,6 @@ export default function CaseCard({
         {/* Top row: Pet Name + MRN + Action Buttons */}
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0">
-              <img
-                src={getSpeciesIconSrc(localCase.species)}
-                alt={localCase.species}
-                className="w-5 h-5 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-            </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-base font-bold text-gray-900 leading-tight">

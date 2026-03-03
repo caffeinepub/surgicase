@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useUpdateAppointmentTask } from "../../hooks/useQueries";
 import type { TaskKey, TaskStatus } from "../../types/case";
 import TaskBadge from "./TaskBadge";
@@ -17,6 +17,7 @@ const APPOINTMENT_TASK_KEYS: TaskKey[] = [
 
 interface AppointmentTaskListProps {
   appointmentId: bigint;
+  // tasks is the authoritative value — managed by the parent via onTasksChange
   tasks: TaskStatus;
   onTasksChange?: (updated: TaskStatus) => void;
 }
@@ -26,21 +27,15 @@ export default function AppointmentTaskList({
   tasks,
   onTasksChange,
 }: AppointmentTaskListProps) {
-  // Keep a local optimistic copy so the UI responds instantly without waiting
-  // for the ICP round-trip to complete.
-  const [localTasks, setLocalTasks] = useState<TaskStatus>(tasks);
+  // Fully controlled — no internal state. Parent owns the optimistic copy via
+  // localTaskOverrides so that the completed/collapsed logic in AppointmentsSection
+  // always has the latest value immediately after a toggle.
   const { mutate: updateTask, isPending } = useUpdateAppointmentTask();
-
-  // Sync from server whenever server data changes (e.g. after refetch)
-  useEffect(() => {
-    setLocalTasks(tasks);
-  }, [tasks]);
 
   const handleToggle = (taskKey: TaskKey, currentValue: boolean) => {
     const newValue = !currentValue;
-    const updated = { ...localTasks, [taskKey]: newValue };
-    // Apply optimistically first
-    setLocalTasks(updated);
+    const updated = { ...tasks, [taskKey]: newValue };
+    // Propagate optimistic update to parent immediately
     onTasksChange?.(updated);
 
     updateTask(
@@ -51,9 +46,8 @@ export default function AppointmentTaskList({
       },
       {
         onError: () => {
-          // Roll back on failure
-          setLocalTasks(localTasks);
-          onTasksChange?.(localTasks);
+          // Roll back to the value before this toggle
+          onTasksChange?.(tasks);
         },
       },
     );
@@ -69,9 +63,9 @@ export default function AppointmentTaskList({
           <TaskBadge
             key={key}
             taskKey={key}
-            completed={localTasks[key]}
+            completed={tasks[key]}
             onClick={
-              isPending ? undefined : () => handleToggle(key, localTasks[key])
+              isPending ? undefined : () => handleToggle(key, tasks[key])
             }
             showLabel={true}
           />

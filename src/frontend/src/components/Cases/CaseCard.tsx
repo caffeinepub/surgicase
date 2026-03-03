@@ -142,6 +142,25 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     return da - db;
   });
 
+  // Seed localTaskOverrides from server data whenever the appointments list
+  // changes (e.g. on initial load or after a refetch). This ensures appointments
+  // that are already fully complete on the server are immediately shown as
+  // collapsed without requiring a task toggle in the current session.
+  React.useEffect(() => {
+    if (appointments.length === 0) return;
+    setLocalTaskOverrides((prev) => {
+      const next = { ...prev };
+      for (const appt of appointments) {
+        const id = String(appt.appointmentId);
+        // Only seed if we don't already have a local override for this appt
+        if (!(id in next)) {
+          next[id] = appt.tasks;
+        }
+      }
+      return next;
+    });
+  }, [appointments]);
+
   const handleConfirmDelete = () => {
     if (!appointmentToDelete) return;
     deleteAppointment.mutate(appointmentToDelete.appointmentId, {

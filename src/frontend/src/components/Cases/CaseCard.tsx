@@ -74,13 +74,13 @@ function SpeciesBadge({ species }: SpeciesBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center justify-center p-1.5 rounded-lg border ${colors[species]}`}
+      className={`inline-flex items-center justify-center p-0.5 rounded-lg border ${colors[species]}`}
       title={SPECIES_LABELS[species]}
     >
       <img
         src={SPECIES_ICONS[species]}
         alt={SPECIES_LABELS[species]}
-        className="w-7 h-7 object-contain flex-shrink-0"
+        className="w-10 h-10 object-contain flex-shrink-0"
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
         }}

@@ -25,7 +25,7 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="w-4 h-4"
+        className="w-full h-full"
         aria-hidden="true"
         role="presentation"
       >
@@ -48,7 +48,7 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="w-4 h-4"
+        className="w-full h-full"
         aria-hidden="true"
         role="presentation"
       >
@@ -70,7 +70,7 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="w-4 h-4"
+        className="w-full h-full"
         aria-hidden="true"
         role="presentation"
       >
@@ -93,7 +93,7 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="w-4 h-4"
+        className="w-full h-full"
         aria-hidden="true"
         role="presentation"
       >
@@ -113,18 +113,25 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
     completedBg: "bg-red-500",
     incompleteBg: "bg-red-50 border border-red-200",
     completedText: "text-white",
-    incompleteText: "text-red-400",
+    incompleteText: "text-red-500",
     icon: (
+      // Red scissors icon
       <svg
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="w-4 h-4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="w-full h-full"
         aria-hidden="true"
         role="presentation"
       >
-        <path d="M12 5v14M5 12h14" />
+        <circle cx="6" cy="6" r="3" />
+        <circle cx="6" cy="18" r="3" />
+        <line x1="20" y1="4" x2="8.12" y2="15.88" />
+        <line x1="14.47" y1="14.48" x2="20" y2="20" />
+        <line x1="8.12" y1="8.12" x2="12" y2="12" />
       </svg>
     ),
   },
@@ -136,18 +143,31 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
     completedText: "text-white",
     incompleteText: "text-blue-400",
     icon: (
-      // Bone icon
+      // Femur bone — angled shaft with rounded head (top-left) and condyle (bottom-right)
       <svg
         viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        className="w-4 h-4"
+        fill="currentColor"
+        className="w-full h-full"
         aria-hidden="true"
         role="presentation"
       >
-        <path d="M17 10c.7-.7 1.69-.7 2.5 0a1.77 1.77 0 0 1 0 2.5c-.7.7-.7 1.69 0 2.5a1.77 1.77 0 0 1-2.5 2.5c-.7-.7-1.69-.7-2.5 0a1.77 1.77 0 0 1-2.5-2.5c.7-.7.7-1.69 0-2.5a1.77 1.77 0 0 1 0-2.5c.7-.7 1.69-.7 2.5 0a1.77 1.77 0 0 1 2.5 0z" />
-        <path d="M7 14c-.7.7-1.69.7-2.5 0a1.77 1.77 0 0 1 0-2.5c.7-.7.7-1.69 0-2.5a1.77 1.77 0 0 1 2.5-2.5c.7.7 1.69.7 2.5 0a1.77 1.77 0 0 1 2.5 2.5c-.7.7-.7 1.69 0 2.5a1.77 1.77 0 0 1 0 2.5c-.7.7-1.69.7-2.5 0a1.77 1.77 0 0 1-2.5 0z" />
+        {/* Femoral head — large ball at top-left */}
+        <circle cx="6.5" cy="5.5" r="3" />
+        {/* Greater trochanter bump at top */}
+        <circle cx="10" cy="4" r="1.8" />
+        {/* Diagonal shaft */}
+        <rect
+          x="9.5"
+          y="7.5"
+          width="4.5"
+          height="11"
+          rx="2.2"
+          transform="rotate(35 11.75 13)"
+        />
+        {/* Medial condyle — lower-right */}
+        <circle cx="17.5" cy="19" r="2.5" />
+        {/* Lateral condyle bump */}
+        <circle cx="14.5" cy="20.5" r="1.8" />
       </svg>
     ),
   },
@@ -159,18 +179,37 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
     completedText: "text-white",
     incompleteText: "text-pink-400",
     icon: (
+      // Rod-shaped bacteria (bacilli) — two rods with flagella
       <svg
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
-        className="w-4 h-4"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="w-full h-full"
         aria-hidden="true"
         role="presentation"
       >
-        <ellipse cx="12" cy="12" rx="9" ry="5" />
-        <ellipse cx="12" cy="12" rx="5" ry="2.5" />
-        <line x1="12" y1="7" x2="12" y2="17" />
+        {/* Rod 1: vertical, left side */}
+        <rect x="5" y="6" width="4" height="10" rx="2" />
+        {/* Flagella on rod 1 */}
+        <line x1="7" y1="6" x2="5" y2="3" />
+        <line x1="7" y1="16" x2="9" y2="19" />
+        <line x1="5" y1="10" x2="2" y2="9" />
+        {/* Rod 2: angled, right side */}
+        <rect
+          x="14"
+          y="7"
+          width="4"
+          height="10"
+          rx="2"
+          transform="rotate(-20 16 12)"
+        />
+        {/* Flagella on rod 2 */}
+        <line x1="17" y1="8" x2="20" y2="5" />
+        <line x1="15" y1="17" x2="13" y2="20" />
+        <line x1="18" y1="13" x2="22" y2="14" />
       </svg>
     ),
   },
@@ -187,7 +226,7 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="w-4 h-4"
+        className="w-full h-full"
         aria-hidden="true"
         role="presentation"
       >
@@ -227,7 +266,7 @@ export default function TaskBadge({
         disabled={!onClick}
         title={config.label}
         className={`
-                    w-6 h-6 rounded-full flex items-center justify-center transition-all duration-150
+                    w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150
                     ${
                       completed
                         ? `${config.completedBg} ${config.completedText}`
@@ -236,7 +275,7 @@ export default function TaskBadge({
                     ${onClick ? "cursor-pointer hover:scale-110 active:scale-95" : "cursor-default"}
                 `}
       >
-        <span className="w-3 h-3 flex items-center justify-center [&>svg]:w-3 [&>svg]:h-3">
+        <span className="w-5 h-5 flex items-center justify-center">
           {config.icon}
         </span>
       </button>
@@ -251,13 +290,15 @@ export default function TaskBadge({
         disabled={!onClick}
         title={config.label}
         className={`
-                    w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150
+                    w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150
                     ${completed ? `${config.completedBg} ${config.completedText}` : `${config.incompleteBg} ${config.incompleteText}`}
                     ${onClick ? "cursor-pointer hover:scale-110 active:scale-95" : "cursor-default"}
                     ${!completed ? "opacity-60" : ""}
                 `}
       >
-        {config.icon}
+        <span className="w-6 h-6 flex items-center justify-center">
+          {config.icon}
+        </span>
       </button>
       {showLabel && (
         <span

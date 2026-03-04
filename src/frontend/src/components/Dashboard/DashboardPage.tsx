@@ -261,7 +261,7 @@ function AppointmentCard({
         <div className="flex items-center gap-1.5 mb-0.5 pr-10">
           {appointment.species && SPECIES_ICONS[appointment.species] && (
             <span
-              className={`inline-flex items-center justify-center p-1 rounded-md border flex-shrink-0 ${
+              className={`inline-flex items-center justify-center p-0.5 rounded-md border flex-shrink-0 ${
                 appointment.species === "canine"
                   ? "bg-amber-50 border-amber-200"
                   : appointment.species === "feline"
@@ -273,7 +273,7 @@ function AppointmentCard({
               <img
                 src={SPECIES_ICONS[appointment.species]}
                 alt={appointment.species}
-                className="w-6 h-6 object-contain"
+                className="w-9 h-9 object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}

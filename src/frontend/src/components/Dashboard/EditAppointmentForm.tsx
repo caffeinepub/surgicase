@@ -11,6 +11,17 @@ interface EditAppointmentFormProps {
   onSuccess?: () => void;
 }
 
+const ALL_TASK_KEYS: (keyof TaskStatus)[] = [
+  "dischargeNotes",
+  "pDVMNotified",
+  "labs",
+  "histo",
+  "surgeryReport",
+  "imaging",
+  "culture",
+  "dailySummary",
+];
+
 const TASK_LABELS: { key: keyof TaskStatus; label: string }[] = [
   { key: "dischargeNotes", label: "Discharge Notes" },
   { key: "pDVMNotified", label: "pDVM Notified" },
@@ -22,11 +33,47 @@ const TASK_LABELS: { key: keyof TaskStatus; label: string }[] = [
   { key: "dailySummary", label: "Daily Summary" },
 ];
 
+// Convention: task stored as false = "needs to be done" (selected for this appt).
+//             task stored as true  = "done or N/A" (not selected / already complete).
+// In the edit form a checkbox being CHECKED means "this task needs to be done"
+// (i.e. the task is in the selected set), which is the inverse of the stored boolean.
+function tasksToSelectedSet(tasks: TaskStatus): Set<keyof TaskStatus> {
+  // A task is "selected" (needs doing) when its stored value is false.
+  // If ALL tasks are true (all done/N/A), fall back to showing all so the
+  // user can still see and manage them.
+  const falseKeys = ALL_TASK_KEYS.filter((k) => !tasks[k]);
+  if (falseKeys.length > 0) return new Set(falseKeys);
+  return new Set(ALL_TASK_KEYS);
+}
+
+// Rebuild a TaskStatus from the selected set.
+// Selected = needs doing = stored false. Not selected = N/A = stored true.
+function selectedSetToTasks(
+  selected: Set<keyof TaskStatus>,
+  existingTasks: TaskStatus,
+): TaskStatus {
+  const result = {} as TaskStatus;
+  for (const k of ALL_TASK_KEYS) {
+    if (selected.has(k)) {
+      // Task is selected (needs doing). Keep existing completion state if it
+      // was already marked done (true); otherwise mark as incomplete (false).
+      result[k] = existingTasks[k] ?? false;
+    } else {
+      // Task not selected for this appointment → mark as N/A (true).
+      result[k] = true;
+    }
+  }
+  return result;
+}
+
 export default function EditAppointmentForm({
   appointment,
   onClose,
   onSuccess,
 }: EditAppointmentFormProps) {
+  // selectedTasks: which tasks are active/applicable for this appointment.
+  // A checked checkbox = this task needs to be done (or is already done).
+  // Derived from stored task state on mount.
   const [form, setForm] = useState({
     patientName: appointment.patientName,
     ownerName: appointment.ownerName,
@@ -37,22 +84,31 @@ export default function EditAppointmentForm({
     arrivalDate: appointment.arrivalDate,
     reason: appointment.reason,
     dateOfBirth: appointment.dateOfBirth,
-    tasks: { ...appointment.tasks },
+    selectedTasks: tasksToSelectedSet(appointment.tasks),
   });
   const [successMsg, setSuccessMsg] = useState("");
 
   const updateAppointment = useUpdateAppointment();
 
   const handleTaskToggle = (key: keyof TaskStatus) => {
-    setForm((f) => ({
-      ...f,
-      tasks: { ...f.tasks, [key]: !f.tasks[key] },
-    }));
+    setForm((f) => {
+      const next = new Set(f.selectedTasks);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return { ...f, selectedTasks: next };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.patientName || !form.mrn) return;
+
+    // Rebuild TaskStatus from the selected set, preserving existing completion
+    // state for tasks that were already marked done.
+    const tasks = selectedSetToTasks(form.selectedTasks, appointment.tasks);
 
     try {
       await updateAppointment.mutateAsync({
@@ -66,7 +122,7 @@ export default function EditAppointmentForm({
         arrivalDate: form.arrivalDate,
         reason: form.reason,
         dateOfBirth: form.dateOfBirth,
-        tasks: form.tasks,
+        tasks,
       });
       setSuccessMsg("Appointment updated successfully!");
       setTimeout(() => {
@@ -346,12 +402,12 @@ export default function EditAppointmentForm({
                 {/* biome-ignore lint/a11y/noLabelWithoutControl: group label for checkbox list, not associated with a single control */}
                 <label
                   className="field-label block mb-1"
-                  aria-label="Task completion status"
+                  aria-label="Tasks to complete"
                 >
-                  Task Status
+                  Tasks to Complete
                 </label>
                 <p className="text-xs text-gray-400 mb-2">
-                  Check tasks that have been completed.
+                  Check all tasks that need to be done for this appointment.
                 </p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {TASK_LABELS.map(({ key, label }) => (
@@ -361,7 +417,7 @@ export default function EditAppointmentForm({
                     >
                       <input
                         type="checkbox"
-                        checked={form.tasks[key]}
+                        checked={form.selectedTasks.has(key)}
                         onChange={() => handleTaskToggle(key)}
                         className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
                       />

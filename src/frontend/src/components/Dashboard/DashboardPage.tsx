@@ -215,9 +215,9 @@ function AppointmentTaskBadges({ appointment }: AppointmentTaskBadgesProps) {
   return (
     <div className="flex flex-wrap gap-0.5 mt-1.5">
       {pendingTasks.map((task) => {
-        const isCompleted = appointment.tasks[
-          task.key as keyof typeof appointment.tasks
-        ] as boolean;
+        // These are all incomplete tasks (value = false = needs doing).
+        // Show them with the task's vibrant/colored style to match the Cases page
+        // convention: colored = needs doing, faded/checkmark = done.
         const Icon = task.icon;
 
         return (
@@ -227,13 +227,13 @@ function AppointmentTaskBadges({ appointment }: AppointmentTaskBadgesProps) {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleToggle(task.key as TaskKey, isCompleted);
+                  handleToggle(task.key as TaskKey, false);
                 }}
                 disabled={pendingKeys.has(task.key as TaskKey)}
                 className={`
                                     inline-flex items-center justify-center w-5 h-5 rounded-full border transition-all
                                     hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
-                                    ${isCompleted ? task.completedClass : task.incompleteClass}
+                                    ${task.completedClass}
                                 `}
                 aria-label={`${task.label}: needs to be done — click to mark complete`}
               >

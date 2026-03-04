@@ -24,8 +24,8 @@ export interface TaskStatus {
 }
 
 export const DEFAULT_TASKS: TaskStatus = {
-  dischargeNotes: true,
-  pDVMNotified: true,
+  dischargeNotes: false,
+  pDVMNotified: false,
   labs: false,
   histo: false,
   surgeryReport: false,

@@ -63,6 +63,7 @@ const TASK_DEFINITIONS = [
     key: "dischargeNotes",
     label: "Discharge Notes",
     icon: FileText,
+    imgSrc: null as string | null,
     completedClass: "bg-green-100 text-green-700 border-green-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
@@ -70,6 +71,7 @@ const TASK_DEFINITIONS = [
     key: "pDVMNotified",
     label: "pDVM Notified",
     icon: Bell,
+    imgSrc: null as string | null,
     completedClass: "bg-yellow-100 text-yellow-700 border-yellow-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
@@ -77,6 +79,7 @@ const TASK_DEFINITIONS = [
     key: "labs",
     label: "Labs",
     icon: FlaskConical,
+    imgSrc: null as string | null,
     completedClass: "bg-orange-100 text-orange-700 border-orange-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
@@ -84,6 +87,7 @@ const TASK_DEFINITIONS = [
     key: "histo",
     label: "Histo",
     icon: Microscope,
+    imgSrc: null as string | null,
     completedClass: "bg-purple-100 text-purple-700 border-purple-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
@@ -91,6 +95,7 @@ const TASK_DEFINITIONS = [
     key: "surgeryReport",
     label: "Surgery Report",
     icon: Scissors,
+    imgSrc: null as string | null,
     completedClass: "bg-red-100 text-red-700 border-red-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
@@ -98,6 +103,9 @@ const TASK_DEFINITIONS = [
     key: "imaging",
     label: "Imaging",
     icon: ScanLine,
+    imgSrc: "/assets/uploads/White-femur-bone-on-blue-background-1.png" as
+      | string
+      | null,
     completedClass: "bg-blue-100 text-blue-700 border-blue-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
@@ -105,6 +113,7 @@ const TASK_DEFINITIONS = [
     key: "culture",
     label: "Culture",
     icon: Beaker,
+    imgSrc: null as string | null,
     completedClass: "bg-pink-100 text-pink-700 border-pink-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
@@ -112,12 +121,21 @@ const TASK_DEFINITIONS = [
     key: "dailySummary",
     label: "Daily Summary",
     icon: ClipboardList,
+    imgSrc: null as string | null,
     completedClass: "bg-teal-100 text-teal-700 border-teal-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
-] as const;
+];
 
-type TaskKey = (typeof TASK_DEFINITIONS)[number]["key"];
+type TaskKey =
+  | "dischargeNotes"
+  | "pDVMNotified"
+  | "labs"
+  | "histo"
+  | "surgeryReport"
+  | "imaging"
+  | "culture"
+  | "dailySummary";
 
 interface DashboardPageProps {
   onNavigateToCaseDetail: (caseId: bigint) => void;
@@ -186,9 +204,17 @@ function AppointmentTaskBadges({ appointment }: AppointmentTaskBadgesProps) {
     }
   };
 
+  // Only show tasks that need attention: false = incomplete/needs doing.
+  // Tasks stored as true are either done or not applicable — no icon needed.
+  const pendingTasks = TASK_DEFINITIONS.filter(
+    (task) => !appointment.tasks[task.key as keyof typeof appointment.tasks],
+  );
+
+  if (pendingTasks.length === 0) return null;
+
   return (
     <div className="flex flex-wrap gap-0.5 mt-1.5">
-      {TASK_DEFINITIONS.map((task) => {
+      {pendingTasks.map((task) => {
         const isCompleted = appointment.tasks[
           task.key as keyof typeof appointment.tasks
         ] as boolean;
@@ -201,21 +227,29 @@ function AppointmentTaskBadges({ appointment }: AppointmentTaskBadgesProps) {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleToggle(task.key, isCompleted);
+                  handleToggle(task.key as TaskKey, isCompleted);
                 }}
-                disabled={pendingKeys.has(task.key)}
+                disabled={pendingKeys.has(task.key as TaskKey)}
                 className={`
                                     inline-flex items-center justify-center w-5 h-5 rounded-full border transition-all
                                     hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
                                     ${isCompleted ? task.completedClass : task.incompleteClass}
                                 `}
-                aria-label={`${task.label}: ${isCompleted ? "complete" : "incomplete"}`}
+                aria-label={`${task.label}: needs to be done — click to mark complete`}
               >
-                <Icon className="w-2.5 h-2.5" />
+                {task.imgSrc ? (
+                  <img
+                    src={task.imgSrc}
+                    alt={task.label}
+                    className="w-2.5 h-2.5 object-contain"
+                  />
+                ) : (
+                  <Icon className="w-2.5 h-2.5" />
+                )}
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
-              {task.label}: {isCompleted ? "✓ Done" : "Pending"}
+              {task.label}: Needs to be done
             </TooltipContent>
           </Tooltip>
         );
@@ -261,19 +295,13 @@ function AppointmentCard({
         <div className="flex items-center gap-1.5 mb-0.5 pr-10">
           {appointment.species && SPECIES_ICONS[appointment.species] && (
             <span
-              className={`inline-flex items-center justify-center p-0.5 rounded-md border flex-shrink-0 ${
-                appointment.species === "canine"
-                  ? "bg-amber-50 border-amber-200"
-                  : appointment.species === "feline"
-                    ? "bg-violet-50 border-violet-200"
-                    : "bg-gray-50 border-gray-200"
-              }`}
+              className="inline-flex items-center justify-center flex-shrink-0"
               title={appointment.species}
             >
               <img
                 src={SPECIES_ICONS[appointment.species]}
                 alt={appointment.species}
-                className="w-9 h-9 object-contain"
+                className="w-16 h-16 object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}

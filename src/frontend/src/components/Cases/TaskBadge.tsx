@@ -143,32 +143,12 @@ const TASK_CONFIGS: Record<TaskKey, TaskConfig> = {
     completedText: "text-white",
     incompleteText: "text-blue-400",
     icon: (
-      // Femur bone — angled shaft with rounded head (top-left) and condyle (bottom-right)
-      <svg
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        className="w-full h-full"
+      <img
+        src="/assets/uploads/White-femur-bone-on-blue-background-1.png"
+        alt="Imaging"
+        className="w-full h-full object-contain"
         aria-hidden="true"
-        role="presentation"
-      >
-        {/* Femoral head — large ball at top-left */}
-        <circle cx="6.5" cy="5.5" r="3" />
-        {/* Greater trochanter bump at top */}
-        <circle cx="10" cy="4" r="1.8" />
-        {/* Diagonal shaft */}
-        <rect
-          x="9.5"
-          y="7.5"
-          width="4.5"
-          height="11"
-          rx="2.2"
-          transform="rotate(35 11.75 13)"
-        />
-        {/* Medial condyle — lower-right */}
-        <circle cx="17.5" cy="19" r="2.5" />
-        {/* Lateral condyle bump */}
-        <circle cx="14.5" cy="20.5" r="1.8" />
-      </svg>
+      />
     ),
   },
   culture: {
@@ -258,26 +238,46 @@ export default function TaskBadge({
 }: TaskBadgeProps) {
   const config = TASK_CONFIGS[taskKey];
 
+  // Incomplete = prominent/colored (needs attention)
+  // Complete = soft green with checkmark overlay (done)
   if (iconOnly) {
     return (
       <button
         type="button"
         onClick={onClick}
         disabled={!onClick}
-        title={config.label}
+        title={
+          completed
+            ? `${config.label} (done)`
+            : `${config.label} (needs to be done)`
+        }
         className={`
-                    w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150
+                    w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150 relative
                     ${
                       completed
-                        ? `${config.completedBg} ${config.completedText}`
-                        : `${config.incompleteBg} ${config.incompleteText}`
+                        ? "bg-green-100 border border-green-300"
+                        : `${config.completedBg} ${config.completedText}`
                     }
                     ${onClick ? "cursor-pointer hover:scale-110 active:scale-95" : "cursor-default"}
                 `}
       >
-        <span className="w-5 h-5 flex items-center justify-center">
-          {config.icon}
-        </span>
+        {completed ? (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            className="w-4 h-4 text-green-600"
+            aria-hidden="true"
+            role="presentation"
+          >
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        ) : (
+          <span className="w-5 h-5 flex items-center justify-center">
+            {config.icon}
+          </span>
+        )}
       </button>
     );
   }
@@ -288,21 +288,42 @@ export default function TaskBadge({
         type="button"
         onClick={onClick}
         disabled={!onClick}
-        title={config.label}
+        title={
+          completed
+            ? `${config.label} (done)`
+            : `${config.label} (needs to be done)`
+        }
         className={`
-                    w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150
-                    ${completed ? `${config.completedBg} ${config.completedText}` : `${config.incompleteBg} ${config.incompleteText}`}
+                    w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 relative
+                    ${
+                      completed
+                        ? "bg-green-100 border border-green-300"
+                        : `${config.completedBg} ${config.completedText}`
+                    }
                     ${onClick ? "cursor-pointer hover:scale-110 active:scale-95" : "cursor-default"}
-                    ${!completed ? "opacity-60" : ""}
                 `}
       >
-        <span className="w-6 h-6 flex items-center justify-center">
-          {config.icon}
-        </span>
+        {completed ? (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            className="w-5 h-5 text-green-600"
+            aria-hidden="true"
+            role="presentation"
+          >
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        ) : (
+          <span className="w-6 h-6 flex items-center justify-center">
+            {config.icon}
+          </span>
+        )}
       </button>
       {showLabel && (
         <span
-          className={`text-xs font-medium ${completed ? "text-gray-700" : "text-gray-400"}`}
+          className={`text-xs font-medium ${completed ? "text-green-600" : "text-gray-600"}`}
         >
           {config.label}
         </span>

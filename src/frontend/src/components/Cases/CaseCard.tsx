@@ -66,21 +66,15 @@ interface SpeciesBadgeProps {
 }
 
 function SpeciesBadge({ species }: SpeciesBadgeProps) {
-  const colors: Record<Species, string> = {
-    canine: "bg-amber-50 border-amber-200",
-    feline: "bg-violet-50 border-violet-200",
-    other: "bg-gray-50 border-gray-200",
-  };
-
   return (
     <span
-      className={`inline-flex items-center justify-center p-0.5 rounded-lg border ${colors[species]}`}
+      className="inline-flex items-center justify-center flex-shrink-0"
       title={SPECIES_LABELS[species]}
     >
       <img
         src={SPECIES_ICONS[species]}
         alt={SPECIES_LABELS[species]}
-        className="w-10 h-10 object-contain flex-shrink-0"
+        className="w-20 h-20 object-contain flex-shrink-0"
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
         }}
@@ -118,6 +112,8 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
   // seededRef tracks which appointment IDs have been initialized from server data.
   // Once seeded, we NEVER overwrite from the server again — local optimistic state wins.
   const seededRef = React.useRef<Set<string>>(new Set());
+
+  // (removed) userToggledIds — no longer needed; collapse is driven purely by task state
 
   const toggleCompletedExpanded = (id: string) => {
     setExpandedCompletedIds((prev) => {
@@ -220,6 +216,8 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
               // Use local optimistic tasks if available, otherwise server data
               const effectiveTasks =
                 localTaskOverrides[apptIdStr] ?? appt.tasks;
+              // Collapse whenever all tasks are complete — works both on page load
+              // (server already has them all done) and after the user checks the last task.
               const apptAllDone = areAllApptTasksComplete(effectiveTasks);
               const isCompletedExpanded = expandedCompletedIds.has(apptIdStr);
               return apptAllDone ? (

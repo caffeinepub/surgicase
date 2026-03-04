@@ -23,16 +23,14 @@ interface NewAppointmentFormProps {
   };
 }
 
-const DEFAULT_TASKS: TaskStatus = {
-  dischargeNotes: true,
-  pDVMNotified: true,
-  labs: false,
-  histo: false,
-  surgeryReport: false,
-  imaging: false,
-  culture: false,
-  dailySummary: false,
-};
+// selectedTasks tracks which tasks are SELECTED (i.e., need to be done).
+// A selected task means it is NOT yet complete → stored as false.
+// A task not selected for this appointment is also stored as false (just not shown).
+// We track selection separately from completion to keep the semantics clear.
+const DEFAULT_SELECTED_TASKS: Set<keyof TaskStatus> = new Set([
+  "dischargeNotes",
+  "pDVMNotified",
+]);
 
 const TASK_LABELS: { key: keyof TaskStatus; label: string }[] = [
   { key: "dischargeNotes", label: "Discharge Notes" },
@@ -45,6 +43,30 @@ const TASK_LABELS: { key: keyof TaskStatus; label: string }[] = [
   { key: "dailySummary", label: "Daily Summary" },
 ];
 
+// Convert selectedTasks set → TaskStatus for storage.
+// Selected tasks (need to be done) → stored as false (incomplete).
+// Unselected tasks (not applicable) → stored as true (treated as "already done / N/A")
+//   so they don't block the "all tasks complete" collapse check.
+// This way collapse fires when all SELECTED tasks have been ticked off.
+function buildTaskStatus(selected: Set<keyof TaskStatus>): TaskStatus {
+  const ALL_KEYS: (keyof TaskStatus)[] = [
+    "dischargeNotes",
+    "pDVMNotified",
+    "labs",
+    "histo",
+    "surgeryReport",
+    "imaging",
+    "culture",
+    "dailySummary",
+  ];
+  const result = {} as TaskStatus;
+  for (const k of ALL_KEYS) {
+    // Selected = needs doing = false (incomplete); not selected = N/A = true (won't block collapse)
+    result[k] = !selected.has(k);
+  }
+  return result;
+}
+
 function getDefaultForm(prefill?: NewAppointmentFormProps["prefill"]) {
   return {
     patientName: prefill?.patientName ?? "",
@@ -56,7 +78,8 @@ function getDefaultForm(prefill?: NewAppointmentFormProps["prefill"]) {
     arrivalDate: getTodayFormatted(),
     dateOfBirth: "",
     reason: "",
-    tasks: { ...DEFAULT_TASKS },
+    // selectedTasks: which tasks have been chosen for this appointment (all start incomplete)
+    selectedTasks: new Set(DEFAULT_SELECTED_TASKS) as Set<keyof TaskStatus>,
   };
 }
 
@@ -74,7 +97,7 @@ export default function NewAppointmentForm({
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally tracking only key fields to avoid re-initializing on every render
   useEffect(() => {
     const newForm = getDefaultForm(prefill);
-    setForm(newForm);
+    setForm(newForm as typeof form);
     setMrnLookup(prefill?.mrn ?? "");
     setSuccessMsg("");
     setAutoFilled(false);
@@ -113,15 +136,24 @@ export default function NewAppointmentForm({
   const createCase = useCreateCase();
 
   const handleTaskToggle = (key: keyof TaskStatus) => {
-    setForm((f) => ({
-      ...f,
-      tasks: { ...f.tasks, [key]: !f.tasks[key] },
-    }));
+    setForm((f) => {
+      const next = new Set(f.selectedTasks);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return { ...f, selectedTasks: next };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.patientName || !form.mrn) return;
+
+    // Build task status: selected tasks are incomplete (false = needs to be done).
+    // None start as complete — staff marks them done from the Cases/Calendar page.
+    const taskStatus = buildTaskStatus(form.selectedTasks);
 
     try {
       // If no existing case for this MRN, create one first
@@ -137,7 +169,7 @@ export default function NewAppointmentForm({
           dateOfBirth: form.dateOfBirth,
           presentingComplaint: form.reason,
           notes: "",
-          tasks: form.tasks,
+          tasks: taskStatus,
         });
       }
 
@@ -151,14 +183,14 @@ export default function NewAppointmentForm({
         arrivalDate: form.arrivalDate,
         reason: form.reason,
         dateOfBirth: form.dateOfBirth,
-        tasks: form.tasks,
+        tasks: taskStatus,
       });
 
       setSuccessMsg(
         "Appointment scheduled! A case has been created or updated on the Cases page.",
       );
       setTimeout(() => {
-        setForm(getDefaultForm(prefill));
+        setForm(getDefaultForm(prefill) as typeof form);
         setSuccessMsg("");
         setAutoFilled(false);
         onSuccess?.();
@@ -445,9 +477,15 @@ export default function NewAppointmentForm({
               {/* Tasks */}
               <div className="col-span-2">
                 {/* biome-ignore lint/a11y/noLabelWithoutControl: group label for checkbox list, not associated with a single control */}
-                <label className="field-label block mb-2" aria-label="Tasks">
-                  Tasks
+                <label
+                  className="field-label block mb-1"
+                  aria-label="Tasks to complete"
+                >
+                  Tasks to Complete
                 </label>
+                <p className="text-xs text-gray-400 mb-2">
+                  Check all tasks that need to be done for this appointment.
+                </p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {TASK_LABELS.map(({ key, label }) => (
                     <label
@@ -456,7 +494,7 @@ export default function NewAppointmentForm({
                     >
                       <input
                         type="checkbox"
-                        checked={form.tasks[key]}
+                        checked={form.selectedTasks.has(key)}
                         onChange={() => handleTaskToggle(key)}
                         className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-400 cursor-pointer"
                       />

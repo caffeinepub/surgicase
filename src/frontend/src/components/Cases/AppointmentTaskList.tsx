@@ -1,11 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { useActor } from "../../hooks/useActor";
 import type { TaskKey, TaskStatus } from "../../types/case";
 import TaskBadge from "./TaskBadge";
 
-// All task keys shown on the cases page per appointment
-const APPOINTMENT_TASK_KEYS: TaskKey[] = [
+// All possible task keys — we determine which to display based on initial task state
+const ALL_TASK_KEYS: TaskKey[] = [
   "dischargeNotes",
   "pDVMNotified",
   "labs",
@@ -35,12 +35,35 @@ export default function AppointmentTaskList({
   // Track which individual tasks are currently being saved to the server
   const [pendingKeys, setPendingKeys] = useState<Set<TaskKey>>(new Set());
 
+  // visibleKeys: the set of tasks to display.
+  // For new appointments: unselected tasks are stored as true (N/A), selected as false.
+  //   → show tasks where initial value = false.
+  // For old appointments (pre-fix): tasks may all be false → show all.
+  // If the component renders in "review mode" (all tasks true = collapsed expanded view),
+  //   show all tasks so the user can review what was done.
+  const [visibleKeys, setVisibleKeys] = useState<Set<TaskKey>>(() => {
+    const falseKeys = ALL_TASK_KEYS.filter((k) => !tasks[k]);
+    if (falseKeys.length > 0) {
+      return new Set(falseKeys);
+    }
+    // All tasks are true (either all complete or all N/A pre-fix) — show all for review
+    return new Set(ALL_TASK_KEYS);
+  });
+
   const handleToggle = useCallback(
     async (taskKey: TaskKey, currentValue: boolean) => {
       if (pendingKeys.has(taskKey)) return; // already in-flight for this key
 
       const newValue = !currentValue;
       const updated = { ...tasks, [taskKey]: newValue };
+
+      // Ensure the toggled key is visible (handles edge case where an N/A task is toggled)
+      setVisibleKeys((prev) => {
+        if (prev.has(taskKey)) return prev;
+        const next = new Set(prev);
+        next.add(taskKey);
+        return next;
+      });
 
       // 1. Immediately propagate to parent so collapse logic fires right away.
       //    This is synchronous — the parent's localTaskOverrides will update
@@ -94,8 +117,13 @@ export default function AppointmentTaskList({
         });
       }
     },
+    // biome-ignore lint/correctness/useExhaustiveDependencies: setVisibleKeys is a stable setState function
     [appointmentId, mrn, tasks, onTasksChange, actor, queryClient, pendingKeys],
   );
+
+  const displayKeys = Array.from(visibleKeys);
+
+  if (displayKeys.length === 0) return null;
 
   return (
     <div className="mt-2 pt-2 border-t border-teal-100">
@@ -103,7 +131,7 @@ export default function AppointmentTaskList({
         Tasks
       </p>
       <div className="flex flex-wrap gap-1.5">
-        {APPOINTMENT_TASK_KEYS.map((key) => (
+        {displayKeys.map((key) => (
           <TaskBadge
             key={key}
             taskKey={key}

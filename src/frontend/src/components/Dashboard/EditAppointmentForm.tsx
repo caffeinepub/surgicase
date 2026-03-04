@@ -344,9 +344,15 @@ export default function EditAppointmentForm({
               {/* Tasks */}
               <div className="col-span-2">
                 {/* biome-ignore lint/a11y/noLabelWithoutControl: group label for checkbox list, not associated with a single control */}
-                <label className="field-label block mb-2" aria-label="Tasks">
-                  Tasks
+                <label
+                  className="field-label block mb-1"
+                  aria-label="Task completion status"
+                >
+                  Task Status
                 </label>
+                <p className="text-xs text-gray-400 mb-2">
+                  Check tasks that have been completed.
+                </p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {TASK_LABELS.map(({ key, label }) => (
                     <label

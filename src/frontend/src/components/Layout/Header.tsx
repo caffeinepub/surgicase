@@ -32,9 +32,9 @@ export default function Header({
           {/* Logo + Nav */}
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg overflow-hidden bg-blue-600 flex-shrink-0">
+              <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0">
                 <img
-                  src="/assets/generated/surgicase-icon-192.dim_192x192.png"
+                  src="/assets/uploads/Vet-app-icon-with-dog-and-cat-4.png"
                   alt="SurgiCase"
                   className="w-full h-full object-cover"
                   onError={(e) => {

@@ -48,6 +48,12 @@ const SPECIES_LABELS: Record<Species, string> = {
   other: "Other",
 };
 
+const SPECIES_ICONS: Record<Species, string> = {
+  canine: "/assets/uploads/Dog_Icon-2.png",
+  feline: "/assets/uploads/Cat_Icon-1--1.png",
+  other: "/assets/uploads/Other_Species_Icon-3.png",
+};
+
 const SEX_LABELS: Record<Sex, string> = {
   male: "Male (Intact)",
   maleNeutered: "Male (Neutered)",
@@ -61,16 +67,24 @@ interface SpeciesBadgeProps {
 
 function SpeciesBadge({ species }: SpeciesBadgeProps) {
   const colors: Record<Species, string> = {
-    canine: "bg-amber-50 text-amber-700 border-amber-200",
-    feline: "bg-violet-50 text-violet-700 border-violet-200",
-    other: "bg-gray-50 text-gray-700 border-gray-200",
+    canine: "bg-amber-50 border-amber-200",
+    feline: "bg-violet-50 border-violet-200",
+    other: "bg-gray-50 border-gray-200",
   };
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${colors[species]}`}
+      className={`inline-flex items-center justify-center p-1.5 rounded-lg border ${colors[species]}`}
+      title={SPECIES_LABELS[species]}
     >
-      {SPECIES_LABELS[species]}
+      <img
+        src={SPECIES_ICONS[species]}
+        alt={SPECIES_LABELS[species]}
+        className="w-7 h-7 object-contain flex-shrink-0"
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = "none";
+        }}
+      />
     </span>
   );
 }

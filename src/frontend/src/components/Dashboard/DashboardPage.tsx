@@ -33,6 +33,13 @@ import {
   Scissors,
   Trash2,
 } from "lucide-react";
+import type { Species } from "../../types/case";
+
+const SPECIES_ICONS: Record<Species, string> = {
+  canine: "/assets/uploads/Dog_Icon-2.png",
+  feline: "/assets/uploads/Cat_Icon-1--1.png",
+  other: "/assets/uploads/Other_Species_Icon-3.png",
+};
 import React, { useState, useMemo } from "react";
 import { useActor } from "../../hooks/useActor";
 import {
@@ -252,6 +259,27 @@ function AppointmentCard({
         }}
       >
         <div className="flex items-center gap-1.5 mb-0.5 pr-10">
+          {appointment.species && SPECIES_ICONS[appointment.species] && (
+            <span
+              className={`inline-flex items-center justify-center p-1 rounded-md border flex-shrink-0 ${
+                appointment.species === "canine"
+                  ? "bg-amber-50 border-amber-200"
+                  : appointment.species === "feline"
+                    ? "bg-violet-50 border-violet-200"
+                    : "bg-gray-50 border-gray-200"
+              }`}
+              title={appointment.species}
+            >
+              <img
+                src={SPECIES_ICONS[appointment.species]}
+                alt={appointment.species}
+                className="w-6 h-6 object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </span>
+          )}
           <span
             className={`font-bold truncate ${allTasksDone ? "text-gray-400 line-through" : "text-gray-900"} ${hasLinkedCase && !allTasksDone ? "hover:text-teal-700 hover:underline" : ""}`}
           >

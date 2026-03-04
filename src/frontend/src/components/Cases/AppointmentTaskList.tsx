@@ -35,20 +35,31 @@ export default function AppointmentTaskList({
   // Track which individual tasks are currently being saved to the server
   const [pendingKeys, setPendingKeys] = useState<Set<TaskKey>>(new Set());
 
-  // visibleKeys: the set of tasks to display.
-  // For new appointments: unselected tasks are stored as true (N/A), selected as false.
-  //   → show tasks where initial value = false.
-  // For old appointments (pre-fix): tasks may all be false → show all.
-  // If the component renders in "review mode" (all tasks true = collapsed expanded view),
-  //   show all tasks so the user can review what was done.
-  const [visibleKeys, setVisibleKeys] = useState<Set<TaskKey>>(() => {
+  // selectedKeys: the set of tasks that were "selected" for this appointment
+  // (i.e., need to be done). Determined once on mount from initial task state.
+  //
+  // Convention: selected tasks are stored as false (incomplete) initially.
+  // Unselected/N/A tasks are stored as true.
+  //
+  // When all selected tasks are later completed (true), we still remember
+  // which keys were originally selected so the review panel can show them.
+  //
+  // Fallback for legacy appointments (all false → all selected): show all.
+  const [selectedKeys] = useState<Set<TaskKey>>(() => {
     const falseKeys = ALL_TASK_KEYS.filter((k) => !tasks[k]);
     if (falseKeys.length > 0) {
+      // Some tasks are false → those are the selected/applicable tasks
       return new Set(falseKeys);
     }
-    // All tasks are true (either all complete or all N/A pre-fix) — show all for review
+    // All tasks are true on first render: either all done or legacy all-N/A.
+    // Show all 8 so the completed review doesn't show empty.
     return new Set(ALL_TASK_KEYS);
   });
+
+  // visibleKeys: only show selected keys (never N/A tasks)
+  const [visibleKeys, setVisibleKeys] = useState<Set<TaskKey>>(
+    () => new Set(selectedKeys),
+  );
 
   const handleToggle = useCallback(
     async (taskKey: TaskKey, currentValue: boolean) => {
@@ -57,13 +68,15 @@ export default function AppointmentTaskList({
       const newValue = !currentValue;
       const updated = { ...tasks, [taskKey]: newValue };
 
-      // Ensure the toggled key is visible (handles edge case where an N/A task is toggled)
-      setVisibleKeys((prev) => {
-        if (prev.has(taskKey)) return prev;
-        const next = new Set(prev);
-        next.add(taskKey);
-        return next;
-      });
+      // Only make the key visible if it was originally selected for this appointment
+      if (selectedKeys.has(taskKey)) {
+        setVisibleKeys((prev) => {
+          if (prev.has(taskKey)) return prev;
+          const next = new Set(prev);
+          next.add(taskKey);
+          return next;
+        });
+      }
 
       // 1. Immediately propagate to parent so collapse logic fires right away.
       //    This is synchronous — the parent's localTaskOverrides will update
@@ -117,8 +130,16 @@ export default function AppointmentTaskList({
         });
       }
     },
-    // biome-ignore lint/correctness/useExhaustiveDependencies: setVisibleKeys is a stable setState function
-    [appointmentId, mrn, tasks, onTasksChange, actor, queryClient, pendingKeys],
+    [
+      appointmentId,
+      mrn,
+      tasks,
+      onTasksChange,
+      actor,
+      queryClient,
+      pendingKeys,
+      selectedKeys,
+    ],
   );
 
   const displayKeys = Array.from(visibleKeys);

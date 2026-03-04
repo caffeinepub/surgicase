@@ -1,13 +1,51 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCreateCase, useGetCaseByMRN } from "../../hooks/useQueries";
-import type { Sex, Species, TaskStatus, VetCase } from "../../types/case";
-import { DEFAULT_TASKS } from "../../types/case";
-import { ALL_TASK_KEYS } from "../../types/case";
+import type { Sex, Species, TaskStatus } from "../../types/case";
 import { getTodayFormatted } from "../../utils/dateUtils";
 import { parseQuickFill } from "../../utils/parseUtils";
 import DateInput from "../shared/DateInput";
-import TaskBadge from "./TaskBadge";
+
+// Tasks that are selected (need to be done) by default
+const DEFAULT_SELECTED_TASKS: Set<keyof TaskStatus> = new Set([
+  "dischargeNotes",
+  "pDVMNotified",
+]);
+
+const TASK_LABELS: { key: keyof TaskStatus; label: string }[] = [
+  { key: "dischargeNotes", label: "Discharge Notes" },
+  { key: "pDVMNotified", label: "pDVM Notified" },
+  { key: "labs", label: "Labs" },
+  { key: "histo", label: "Histo" },
+  { key: "surgeryReport", label: "Surgery Report" },
+  { key: "imaging", label: "Imaging" },
+  { key: "culture", label: "Culture" },
+  { key: "dailySummary", label: "Daily Summary" },
+];
+
+const ALL_TASK_KEYS_LIST: (keyof TaskStatus)[] = [
+  "dischargeNotes",
+  "pDVMNotified",
+  "labs",
+  "histo",
+  "surgeryReport",
+  "imaging",
+  "culture",
+  "dailySummary",
+];
+
+// Convert selectedTasks set → TaskStatus for storage.
+// Selected tasks (need to be done) → stored as false (incomplete).
+// Unselected tasks (not applicable) → stored as true (won't block collapse).
+function buildTaskStatusFromSelected(
+  selected: Set<keyof TaskStatus>,
+): TaskStatus {
+  const result = {} as TaskStatus;
+  for (const k of ALL_TASK_KEYS_LIST) {
+    result[k] = !selected.has(k);
+  }
+  return result;
+}
 
 interface NewCaseFormProps {
   onClose: () => void;
@@ -38,7 +76,7 @@ function getDefaultForm() {
     dateOfBirth: "",
     presentingComplaint: "",
     notes: "",
-    tasks: { ...DEFAULT_TASKS },
+    selectedTasks: new Set(DEFAULT_SELECTED_TASKS) as Set<keyof TaskStatus>,
   };
 }
 
@@ -58,7 +96,8 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
   // MRN autofill
   useEffect(() => {
     if (existingCase && mrnLookup) {
-      setForm({
+      setForm((f) => ({
+        ...f,
         mrn: existingCase.mrn,
         arrivalDate: existingCase.arrivalDate,
         petName: existingCase.petName,
@@ -69,8 +108,8 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
         dateOfBirth: existingCase.dateOfBirth,
         presentingComplaint: existingCase.presentingComplaint,
         notes: existingCase.notes,
-        tasks: { ...existingCase.tasks },
-      });
+        // Keep selectedTasks from the form, not the case's stored tasks
+      }));
     }
   }, [existingCase, mrnLookup]);
 
@@ -160,15 +199,22 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
   }, [isListening]);
 
   const handleTaskToggle = (key: keyof TaskStatus) => {
-    setForm((f) => ({
-      ...f,
-      tasks: { ...f.tasks, [key]: !f.tasks[key] },
-    }));
+    setForm((f) => {
+      const next = new Set(f.selectedTasks);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return { ...f, selectedTasks: next };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.mrn || !form.petName) return;
+
+    const taskStatus = buildTaskStatusFromSelected(form.selectedTasks);
 
     try {
       await createCase.mutateAsync({
@@ -182,7 +228,7 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
         dateOfBirth: form.dateOfBirth,
         presentingComplaint: form.presentingComplaint,
         notes: form.notes,
-        tasks: form.tasks,
+        tasks: taskStatus,
       });
       setForm(getDefaultForm());
       setQuickFill("");
@@ -484,19 +530,33 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
             </div>
 
             {/* Tasks */}
-            <div className="mt-4">
-              {/* biome-ignore lint/a11y/noLabelWithoutControl: group label for task badges, not a single form control */}
-              <label className="field-label block mb-2">Tasks</label>
-              <div className="flex flex-wrap gap-3">
-                {ALL_TASK_KEYS.map((key) => (
-                  <div key={key} className="flex flex-col items-center gap-1">
-                    <TaskBadge
-                      taskKey={key}
-                      completed={form.tasks[key]}
-                      onClick={() => handleTaskToggle(key)}
-                      showLabel={true}
+            <div className="mt-4 col-span-2">
+              {/* biome-ignore lint/a11y/noLabelWithoutControl: group label for checkbox list, not associated with a single control */}
+              <label
+                className="field-label block mb-1"
+                aria-label="Tasks to complete"
+              >
+                Tasks to Complete
+              </label>
+              <p className="text-xs text-gray-400 mb-2">
+                Check all tasks that need to be done for this case.
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {TASK_LABELS.map(({ key, label }) => (
+                  <label
+                    key={key}
+                    className="flex items-center gap-2 cursor-pointer group"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.selectedTasks.has(key)}
+                      onChange={() => handleTaskToggle(key)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
                     />
-                  </div>
+                    <span className="text-xs text-gray-700 group-hover:text-gray-900 transition-colors">
+                      {label}
+                    </span>
+                  </label>
                 ))}
               </div>
             </div>

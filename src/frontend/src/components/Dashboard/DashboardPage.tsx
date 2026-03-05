@@ -313,29 +313,42 @@ function AppointmentCard({
           >
             {appointment.patientName || "—"}
           </span>
-          {allTasksDone ? (
+          {allTasksDone && (
             <CheckCircle2 className="ml-auto w-3.5 h-3.5 text-green-500 shrink-0" />
-          ) : (
-            <span className="ml-auto text-[10px] font-medium text-gray-400 shrink-0">
-              {appointment.mrn}
-            </span>
           )}
         </div>
+        {!allTasksDone && appointment.mrn && (
+          <div className="text-xs font-semibold text-black truncate pl-5 mb-0.5">
+            MRN: {appointment.mrn}
+          </div>
+        )}
         {!allTasksDone && appointment.ownerName && (
-          <div className="text-[10px] text-gray-500 truncate pl-5 mb-0.5">
-            {appointment.ownerName}
+          <div className="text-xs font-medium text-black truncate pl-5 mb-0.5">
+            Owner: {appointment.ownerName}
           </div>
         )}
         {!allTasksDone && appointment.dateOfBirth && (
-          <div className="text-[10px] text-gray-400 truncate pl-5 mb-0.5">
+          <div className="text-xs font-medium text-black truncate pl-5 mb-0.5">
             DOB: {appointment.dateOfBirth}
+            {(() => {
+              const dob = new Date(appointment.dateOfBirth);
+              if (!Number.isNaN(dob.getTime())) {
+                const today = new Date();
+                let age = today.getFullYear() - dob.getFullYear();
+                const m = today.getMonth() - dob.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < dob.getDate()))
+                  age--;
+                return ` · Age: ${age}`;
+              }
+              return null;
+            })()}
           </div>
         )}
         {appointment.reason && (
           <div
-            className={`text-[10px] italic truncate pl-5 mb-0.5 ${allTasksDone ? "text-gray-300" : "text-gray-400"}`}
+            className={`text-xs truncate pl-5 mb-0.5 ${allTasksDone ? "text-gray-300 italic" : "text-black font-medium"}`}
           >
-            {appointment.reason}
+            Reason: {appointment.reason}
           </div>
         )}
       </div>

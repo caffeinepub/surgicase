@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Cake,
   CalendarDays,
@@ -103,6 +104,12 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     useState<VetAppointment | null>(null);
   const [editingApptId, setEditingApptId] = useState<string | null>(null);
 
+  // seedVersion is incremented each time an appointment edit succeeds.
+  // It forces the useEffect to re-run even if the appointments array reference
+  // hasn't changed (React Query structural sharing), ensuring fresh task data
+  // is picked up after an edit.
+  const [seedVersion, setSeedVersion] = useState(0);
+
   // Optimistic local task overrides keyed by appointmentId string.
   // The local state is the single source of truth for task display and collapse logic.
   // Server data is only used to seed on first encounter; after that, local state wins.
@@ -115,6 +122,8 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
   const seededRef = React.useRef<Set<string>>(new Set());
 
   // (removed) userToggledIds — no longer needed; collapse is driven purely by task state
+
+  const queryClient = useQueryClient();
 
   const toggleCompletedExpanded = (id: string) => {
     setExpandedCompletedIds((prev) => {
@@ -140,9 +149,12 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     setLocalTaskOverrides((prev) => ({ ...prev, [apptIdStr]: updated }));
   };
 
-  // Called when an appointment edit succeeds. Clears the seed lock for that
-  // appointment so the fresh server data (from the invalidated query re-fetch)
-  // is used to re-seed the local task overrides with the new task selection.
+  // Called when an appointment edit succeeds.
+  // 1. Clears the seed lock for that appointment so fresh server data can re-seed it.
+  // 2. Removes any stale local task override for that appointment.
+  // 3. Invalidates the appointments-by-mrn query to force a refetch with new task data.
+  // 4. Increments seedVersion so the seeding useEffect re-runs even if React Query
+  //    structural sharing prevents a new array reference from being created.
   const handleAppointmentEditSuccess = (apptIdStr: string) => {
     seededRef.current.delete(apptIdStr);
     setLocalTaskOverrides((prev) => {
@@ -152,6 +164,9 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     });
     setEditingApptId(null);
     setAppointmentToEdit(null);
+    // Force re-seed by invalidating the query and bumping the version counter
+    queryClient.invalidateQueries({ queryKey: ["appointments-by-mrn", mrn] });
+    setSeedVersion((v) => v + 1);
   };
 
   const { data: appointments = [], isLoading } = useGetAppointmentsByMRN(mrn);
@@ -166,7 +181,14 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
   // Seed localTaskOverrides from server data ONLY for appointments not yet seeded.
   // Once an appointment has been seeded (either from server or via local toggle),
   // server refetches are completely ignored for that appointment.
+  // seedVersion is read inside the effect so that incrementing it (after an edit)
+  // forces this effect to re-run even when React Query's structural sharing keeps
+  // the appointments array reference identical.
   React.useEffect(() => {
+    // Consume seedVersion so the linter recognises it as a used dependency.
+    // Incrementing seedVersion after an edit is what triggers the re-seed for
+    // the appointment whose lock was just cleared.
+    void seedVersion;
     if (appointments.length === 0) return;
     setLocalTaskOverrides((prev) => {
       const next = { ...prev };
@@ -174,7 +196,8 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
       for (const appt of appointments) {
         const id = String(appt.appointmentId);
         if (!seededRef.current.has(id)) {
-          // First time seeing this appointment — seed from server and lock it
+          // First time seeing this appointment (or seed lock was cleared after edit)
+          // — seed from server and lock it
           next[id] = appt.tasks;
           seededRef.current.add(id);
           changed = true;
@@ -183,7 +206,7 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
       }
       return changed ? next : prev;
     });
-  }, [appointments]);
+  }, [appointments, seedVersion]);
 
   const handleConfirmDelete = () => {
     if (!appointmentToDelete) return;

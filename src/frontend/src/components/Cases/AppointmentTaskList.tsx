@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useActor } from "../../hooks/useActor";
 import type { TaskKey, TaskStatus } from "../../types/case";
 import TaskBadge from "./TaskBadge";
@@ -35,31 +35,33 @@ export default function AppointmentTaskList({
   // Track which individual tasks are currently being saved to the server
   const [pendingKeys, setPendingKeys] = useState<Set<TaskKey>>(new Set());
 
-  // selectedKeys: the set of tasks that were "selected" for this appointment
-  // (i.e., need to be done). Determined once on mount from initial task state.
-  //
-  // Convention: selected tasks are stored as false (incomplete) initially.
-  // Unselected/N/A tasks are stored as true.
-  //
-  // When all selected tasks are later completed (true), we still remember
-  // which keys were originally selected so the review panel can show them.
-  //
-  // Fallback for legacy appointments (all false → all selected): show all.
-  const [selectedKeys] = useState<Set<TaskKey>>(() => {
+  // selectedKeys: re-derived whenever `tasks` changes (e.g. after an edit re-seeds
+  // server data). Convention: selected = stored false (needs doing). N/A = stored true.
+  // If all tasks are true (all done or legacy), show all so the review panel isn't empty.
+  const selectedKeys = useMemo<Set<TaskKey>>(() => {
     const falseKeys = ALL_TASK_KEYS.filter((k) => !tasks[k]);
-    if (falseKeys.length > 0) {
-      // Some tasks are false → those are the selected/applicable tasks
-      return new Set(falseKeys);
-    }
-    // All tasks are true on first render: either all done or legacy all-N/A.
-    // Show all 8 so the completed review doesn't show empty.
+    if (falseKeys.length > 0) return new Set(falseKeys);
     return new Set(ALL_TASK_KEYS);
-  });
+  }, [tasks]);
 
-  // visibleKeys: only show selected keys (never N/A tasks)
+  // visibleKeys: starts equal to selectedKeys; expands as the user toggles tasks.
+  // Re-sync whenever selectedKeys changes (i.e. after an appointment edit).
   const [visibleKeys, setVisibleKeys] = useState<Set<TaskKey>>(
     () => new Set(selectedKeys),
   );
+  const prevSelectedKeysRef = useRef(selectedKeys);
+  useEffect(() => {
+    // Only update visibleKeys when the selectedKeys set actually changes content
+    const prev = prevSelectedKeysRef.current;
+    const sameSize = prev.size === selectedKeys.size;
+    const sameContent =
+      sameSize &&
+      ALL_TASK_KEYS.every((k) => prev.has(k) === selectedKeys.has(k));
+    if (!sameContent) {
+      prevSelectedKeysRef.current = selectedKeys;
+      setVisibleKeys(new Set(selectedKeys));
+    }
+  }, [selectedKeys]);
 
   const handleToggle = useCallback(
     async (taskKey: TaskKey, currentValue: boolean) => {

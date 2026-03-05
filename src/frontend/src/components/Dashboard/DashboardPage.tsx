@@ -16,22 +16,14 @@ import {
 } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Beaker,
-  Bell,
   Calendar,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
-  FileText,
-  FlaskConical,
-  Microscope,
   Pencil,
   Plus,
   RefreshCw,
-  ScanLine,
-  Scissors,
   Trash2,
 } from "lucide-react";
 import type { Species } from "../../types/case";
@@ -63,66 +55,56 @@ const TASK_DEFINITIONS = [
   {
     key: "dischargeNotes",
     label: "Discharge Notes",
-    icon: FileText,
-    imgSrc: null as string | null,
+    imgSrc: "/assets/uploads/clipboard-5.png",
     completedClass: "bg-green-100 text-green-700 border-green-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
   {
     key: "pDVMNotified",
     label: "pDVM Notified",
-    icon: Bell,
-    imgSrc: null as string | null,
+    imgSrc: "/assets/uploads/envelope-4.png",
     completedClass: "bg-yellow-100 text-yellow-700 border-yellow-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
   {
     key: "labs",
     label: "Labs",
-    icon: FlaskConical,
-    imgSrc: null as string | null,
+    imgSrc: "/assets/uploads/lab-flask-2.png",
     completedClass: "bg-orange-100 text-orange-700 border-orange-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
   {
     key: "histo",
     label: "Histo",
-    icon: Microscope,
-    imgSrc: null as string | null,
+    imgSrc: "/assets/uploads/microscope-1.png",
     completedClass: "bg-purple-100 text-purple-700 border-purple-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
   {
     key: "surgeryReport",
     label: "Surgery Report",
-    icon: Scissors,
-    imgSrc: null as string | null,
+    imgSrc: "/assets/uploads/scissors-3.png",
     completedClass: "bg-red-100 text-red-700 border-red-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
   {
     key: "imaging",
     label: "Imaging",
-    icon: ScanLine,
-    imgSrc: "/assets/uploads/White-femur-bone-on-blue-background-1.png" as
-      | string
-      | null,
+    imgSrc: "/assets/uploads/bone-8.png",
     completedClass: "bg-blue-100 text-blue-700 border-blue-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
   {
     key: "culture",
     label: "Culture",
-    icon: Beaker,
-    imgSrc: null as string | null,
+    imgSrc: "/assets/uploads/bacteria-7.png",
     completedClass: "bg-pink-100 text-pink-700 border-pink-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
   {
     key: "dailySummary",
     label: "Daily Summary",
-    icon: ClipboardList,
-    imgSrc: null as string | null,
+    imgSrc: "/assets/uploads/circular-arrow-6.png",
     completedClass: "bg-teal-100 text-teal-700 border-teal-300",
     incompleteClass: "bg-gray-50 text-gray-400 border-gray-200",
   },
@@ -216,11 +198,6 @@ function AppointmentTaskBadges({ appointment }: AppointmentTaskBadgesProps) {
   return (
     <div className="flex flex-wrap gap-0.5 mt-1.5">
       {pendingTasks.map((task) => {
-        // These are all incomplete tasks (value = false = needs doing).
-        // Show them with the task's vibrant/colored style to match the Cases page
-        // convention: colored = needs doing, faded/checkmark = done.
-        const Icon = task.icon;
-
         return (
           <Tooltip key={task.key}>
             <TooltipTrigger asChild>
@@ -238,15 +215,11 @@ function AppointmentTaskBadges({ appointment }: AppointmentTaskBadgesProps) {
                                 `}
                 aria-label={`${task.label}: needs to be done — click to mark complete`}
               >
-                {task.imgSrc ? (
-                  <img
-                    src={task.imgSrc}
-                    alt={task.label}
-                    className="w-2.5 h-2.5 object-contain"
-                  />
-                ) : (
-                  <Icon className="w-2.5 h-2.5" />
-                )}
+                <img
+                  src={task.imgSrc}
+                  alt={task.label}
+                  className="w-2.5 h-2.5 object-contain"
+                />
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
@@ -740,7 +713,14 @@ export default function DashboardPage({
           <EditAppointmentForm
             appointment={appointmentToEdit}
             onClose={() => setAppointmentToEdit(null)}
-            onSuccess={() => setAppointmentToEdit(null)}
+            onSuccess={() => {
+              setAppointmentToEdit(null);
+              // Force a fresh fetch so updated task icons appear immediately
+              queryClient.invalidateQueries({ queryKey: ["appointments"] });
+              queryClient.invalidateQueries({
+                queryKey: ["appointments-by-mrn"],
+              });
+            }}
           />
         )}
 

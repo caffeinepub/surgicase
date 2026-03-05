@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TargetCase } from "../../App";
@@ -101,9 +102,16 @@ export default function CasesPage({
   // Track which navigation key we've already handled to avoid double-firing
   const handledKeyRef = useRef<number | null>(null);
 
-  const { data: cases = [], isLoading, error } = useGetCases();
+  const { data: cases = [], isLoading, error, isFetching } = useGetCases();
   const deleteCase = useDeleteCase();
   const createCase = useCreateCase();
+  const queryClient = useQueryClient();
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["cases"] });
+    queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    queryClient.invalidateQueries({ queryKey: ["appointments-by-mrn"] });
+  };
 
   // When targetCase changes (new navigation request) or cases finish loading,
   // attempt to scroll to and highlight the target card.
@@ -378,6 +386,29 @@ export default function CasesPage({
               <polyline points="14 2 14 8 20 8" />
             </svg>
             {isExportingPDF ? "Exporting..." : "Export PDF"}
+          </button>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            className="flex items-center gap-1.5 text-sm font-medium border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            title="Refresh cases"
+            data-ocid="cases.refresh_button"
+          >
+            <svg
+              className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+              role="presentation"
+            >
+              <path d="M23 4v6h-6" />
+              <path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            Refresh
           </button>
           <button
             type="button"

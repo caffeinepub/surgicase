@@ -69,7 +69,7 @@ export default function App() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <span className="text-sm text-gray-500">Loading SurgiCase...</span>
+          <span className="text-sm text-gray-500">Loading SurgiTrack...</span>
         </div>
       </div>
     );
@@ -143,7 +143,7 @@ export default function App() {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-100 py-3 px-4 text-center">
         <p className="text-xs text-gray-400">
-          © {new Date().getFullYear()} SurgiCase · Built with{" "}
+          © {new Date().getFullYear()} SurgiTrack · Built with{" "}
           <span className="text-red-400">♥</span> using{" "}
           <a
             href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || "surgicase")}`}

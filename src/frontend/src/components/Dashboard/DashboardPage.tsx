@@ -29,6 +29,7 @@ import {
   Microscope,
   Pencil,
   Plus,
+  RefreshCw,
   ScanLine,
   Scissors,
   Trash2,
@@ -403,8 +404,19 @@ export default function DashboardPage({
   const [appointmentToEdit, setAppointmentToEdit] =
     useState<VetAppointment | null>(null);
 
-  const { data: appointments = [], isLoading, error } = useGetAppointments();
+  const queryClient = useQueryClient();
+  const {
+    data: appointments = [],
+    isLoading,
+    error,
+    isFetching,
+  } = useGetAppointments();
   const deleteAppointment = useDeleteAppointment();
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    queryClient.invalidateQueries({ queryKey: ["appointments-by-mrn"] });
+  };
 
   // Compute the 7 days for the displayed week
   const weekDays = useMemo(() => {
@@ -522,6 +534,19 @@ export default function DashboardPage({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isFetching}
+              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border bg-white text-gray-600 border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              title="Refresh appointments"
+              data-ocid="dashboard.refresh_button"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
+              />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
             <button
               type="button"
               onClick={handleTodayFilter}

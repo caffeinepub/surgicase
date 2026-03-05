@@ -1,38 +1,35 @@
-# SurgiCase
+# SurgiTrack
 
 ## Current State
 
-- Calendar (Dashboard) page shows weekly appointments with species icons for canine/feline/other, interactive task badges, and completed appointment styling (green card).
-- Cases page shows patient cards; each card has an Appointments section showing individual appointment rows with task lists.
-- Completed appointments on the Cases page are supposed to collapse to a compact row (date + reason + green checkmark), expandable by clicking.
-- Species icon PNGs in `/assets/generated/` (cat-icon.png, dog-icon.png, other-icon.png) were AI-generated placeholders that do not match the uploaded user icons.
-- Task completion collapse on the Cases page is unreliable: checking the last task often does not trigger the visual collapse.
+The app has a Calendar page (DashboardPage) and a Cases page (CasesPage). Appointments carry a `TaskStatus` object where `false = task needs doing` and `true = task done/N/A`. Task badges are shown for "selected" tasks (those originally added to the appointment) on both pages.
+
+### Known issues
+1. **Edit appointment task changes don't persist visually**: When an appointment is edited to add/remove tasks, the `AppointmentsSection` in `CaseCard` has a `seededRef` that locks in task state from the first server fetch. After `useUpdateAppointment` invalidates the `appointments-by-mrn` query and fresh server data arrives, the `seededRef` blocks re-seeding — so the new task selection is silently discarded and the old icons remain.
+2. The same lock-in also affects the Calendar page's `AppointmentTaskBadges`, which reads directly from the `appointments` query cache. After an edit the cache is correctly invalidated and re-fetched, so the Calendar page actually does update — but the visible task icons rely on the `pendingTasks` filter (`!tasks[key]`). If the saved task has `true` (N/A) it disappears; if `false` (needs doing) it reappears. This part works, but the Dashboard uses stale `appointment` props because `AppointmentCard` receives a prop snapshot. Once the query cache updates, React Query re-renders the parent and a new prop flows down — this should work, but needs verification.
+3. App name shows "SurgiCase" in the header and footer.
+4. No refresh button exists on any page.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Nothing new.
+- Refresh button in the Dashboard page header toolbar (next to "Add Appointment"), which calls `queryClient.invalidateQueries` for `["appointments"]` and `["appointments-by-mrn"]`.
+- Refresh button in the Cases page header toolbar, which calls `queryClient.invalidateQueries` for `["cases"]`, `["appointments"]`, and `["appointments-by-mrn"]`.
 
 ### Modify
-1. **Species icons**: Replace the AI-generated placeholder PNGs with the actual PNG data extracted from the user-uploaded ICO files (`Cat_Icon.ico`, `Dog_Icon.ico`, `Other_Species_Icon.ico`). The extraction has already been done at the filesystem level (new PNGs in `/assets/generated/`). The frontend code already references the correct paths — no code change needed for the path references, but the `AppointmentTaskList` and `CaseCard` components must reliably reference these files.
-2. **Task completion collapse (Cases page)**: Refactor `AppointmentsSection` in `CaseCard.tsx` to eliminate the race between `locallyModifiedRef` and the seeding `useEffect`. The fix: initialize `localTaskOverrides` eagerly using a lazy state initializer (or a `useMemo`-seeded approach), remove the seeding `useEffect`, and update the override in-place on every toggle without relying on a ref guard. The `AppointmentTaskList` child should call `onTasksChange` synchronously on toggle, and the parent should derive `apptAllDone` purely from `localTaskOverrides`.
+- **Header.tsx**: Change "SurgiCase" text to "SurgiTrack". Change `alt` attribute of logo image to "SurgiTrack".
+- **App.tsx**: Change loading spinner label "Loading SurgiCase..." to "Loading SurgiTrack..." and footer copyright text from "SurgiCase" to "SurgiTrack".
+- **CaseCard.tsx / AppointmentsSection**: After `useUpdateAppointment` succeeds, the query cache is invalidated and a new fetch fires. The `seededRef` must be cleared for the edited appointment so the fresh server data re-seeds the local task overrides. Fix: after `EditAppointmentForm` calls `onSuccess`, clear the seededRef entry for that appointment ID and delete its entry from `localTaskOverrides` so the re-fetch re-seeds cleanly.
+- **AppointmentsSection**: Expose a way for the parent (`AppointmentsSection`) to reset a single appointment's seed when its edit form succeeds. The `EditAppointmentForm`'s `onSuccess` callback should trigger this reset.
+- **AppointmentTaskList**: The `selectedKeys` state is computed once on mount from `tasks`. After an edit, the component is unmounted and remounted (because `EditAppointmentForm` closes and `AppointmentsSection` re-renders), so `selectedKeys` re-initialises from the new server tasks — this is already correct behaviour as long as the `localTaskOverrides` are cleared correctly in the parent.
 
 ### Remove
-- The seeding `useEffect` and `locallyModifiedRef` pattern in `AppointmentsSection` (replaced by a cleaner state initialization approach).
+- Nothing removed.
 
 ## Implementation Plan
 
-1. **CaseCard.tsx** — Refactor `AppointmentsSection`:
-   - Remove `locallyModifiedRef` and the seeding `useEffect`.
-   - Initialize `localTaskOverrides` as a `Record<string, TaskStatus>` keyed by appointmentId string.
-   - On mount/data load, merge server data into overrides only for keys NOT already present (so optimistic state is never overwritten). Use a `useEffect` that only adds missing keys — never overwrites existing ones.
-   - Simplify: since `onTasksChange` is called before the async server call in `AppointmentTaskList`, the override is always set before any server round-trip. Just ensure no effect can overwrite it.
-   - Cleanest approach: track a boolean `initializedRef` per appointment ID and seed only once.
-   - Alternative cleaner approach: Lift task state fully into `AppointmentsSection` and make `AppointmentTaskList` fully controlled with no async cache interaction — use the `useQueryClient` in `AppointmentsSection` instead.
-
-2. **AppointmentTaskList.tsx** — Make fully controlled:
-   - Remove internal `pendingKeys` state if it interferes.
-   - Keep `onTasksChange` as the immediate propagator.
-   - After success, update the React Query cache for ONLY the specific query key `["appointments-by-mrn", mrn]` using `setQueryData` (not `setQueriesData`) to prevent unexpected re-renders in other subscribers.
-
-3. **Verify** icons are correctly loaded (the PNG files were already replaced on disk).
+1. **Header.tsx** — change "SurgiCase" → "SurgiTrack" in span text and img alt.
+2. **App.tsx** — change both "SurgiCase" string occurrences (loading spinner text, footer) to "SurgiTrack".
+3. **DashboardPage.tsx** — add a Refresh icon button to the page-header toolbar; on click call `queryClient.invalidateQueries({ queryKey: ["appointments"] })`.
+4. **CasesPage.tsx** — add a Refresh icon button to the page-header toolbar; on click invalidate `["cases"]`, `["appointments"]`, `["appointments-by-mrn"]`.
+5. **CaseCard.tsx / AppointmentsSection** — when the `EditAppointmentForm` `onSuccess` fires for a given appointment, clear that appointment's entry from `seededRef` and `localTaskOverrides` so the fresh server data can re-seed it with the correct updated tasks.

@@ -101,6 +101,7 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
     useState<VetAppointment | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] =
     useState<VetAppointment | null>(null);
+  const [editingApptId, setEditingApptId] = useState<string | null>(null);
 
   // Optimistic local task overrides keyed by appointmentId string.
   // The local state is the single source of truth for task display and collapse logic.
@@ -137,6 +138,20 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
   ) => {
     seededRef.current.add(apptIdStr); // prevent any future re-seed from server
     setLocalTaskOverrides((prev) => ({ ...prev, [apptIdStr]: updated }));
+  };
+
+  // Called when an appointment edit succeeds. Clears the seed lock for that
+  // appointment so the fresh server data (from the invalidated query re-fetch)
+  // is used to re-seed the local task overrides with the new task selection.
+  const handleAppointmentEditSuccess = (apptIdStr: string) => {
+    seededRef.current.delete(apptIdStr);
+    setLocalTaskOverrides((prev) => {
+      const next = { ...prev };
+      delete next[apptIdStr];
+      return next;
+    });
+    setEditingApptId(null);
+    setAppointmentToEdit(null);
   };
 
   const { data: appointments = [], isLoading } = useGetAppointmentsByMRN(mrn);
@@ -260,6 +275,7 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          setEditingApptId(apptIdStr);
                           setAppointmentToEdit(appt);
                         }}
                         className="p-0.5 rounded text-gray-300 hover:text-blue-500 hover:bg-blue-50 transition-colors"
@@ -339,6 +355,7 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          setEditingApptId(apptIdStr);
                           setAppointmentToEdit(appt);
                         }}
                         className="p-0.5 rounded text-teal-300 hover:text-blue-500 hover:bg-blue-50 transition-colors"
@@ -382,8 +399,17 @@ function AppointmentsSection({ mrn }: { mrn: string }) {
       {appointmentToEdit && (
         <EditAppointmentForm
           appointment={appointmentToEdit}
-          onClose={() => setAppointmentToEdit(null)}
-          onSuccess={() => setAppointmentToEdit(null)}
+          onClose={() => {
+            setAppointmentToEdit(null);
+            setEditingApptId(null);
+          }}
+          onSuccess={() => {
+            if (editingApptId) {
+              handleAppointmentEditSuccess(editingApptId);
+            } else {
+              setAppointmentToEdit(null);
+            }
+          }}
         />
       )}
 

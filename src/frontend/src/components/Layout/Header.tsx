@@ -35,7 +35,7 @@ export default function Header({
               <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0">
                 <img
                   src="/assets/uploads/Vet-app-icon-with-dog-and-cat-4.png"
-                  alt="SurgiCase"
+                  alt="SurgiTrack"
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
@@ -43,7 +43,7 @@ export default function Header({
                 />
               </div>
               <span className="font-bold text-gray-900 text-base tracking-tight">
-                SurgiCase
+                SurgiTrack
               </span>
             </div>
 

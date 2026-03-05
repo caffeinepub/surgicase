@@ -48,6 +48,12 @@ function tasksToSelectedSet(tasks: TaskStatus): Set<keyof TaskStatus> {
 
 // Rebuild a TaskStatus from the selected set.
 // Selected = needs doing = stored false. Not selected = N/A = stored true.
+//
+// IMPORTANT: "selected" means the task NEEDS TO BE DONE (stored as false).
+// A task that was previously N/A (true) and is now newly selected must be
+// stored as false — it is not done yet. We must NOT carry over the old true
+// value; doing so would make the task invisible on the Cases/Calendar pages
+// (which only show tasks stored as false = needs doing).
 function selectedSetToTasks(
   selected: Set<keyof TaskStatus>,
   existingTasks: TaskStatus,
@@ -55,9 +61,14 @@ function selectedSetToTasks(
   const result = {} as TaskStatus;
   for (const k of ALL_TASK_KEYS) {
     if (selected.has(k)) {
-      // Task is selected (needs doing). Keep existing completion state if it
-      // was already marked done (true); otherwise mark as incomplete (false).
-      result[k] = existingTasks[k] ?? false;
+      // Task is selected (needs doing).
+      // Only keep it as "done" (true) if it was ALREADY selected AND already
+      // completed — i.e. it was false before (meaning it was in the active set)
+      // AND is somehow true. In practice, active tasks are stored as false until
+      // the user checks them off via the task icon. So for any newly-selected
+      // task (was true/N/A before), always write false.
+      const wasAlreadyActive = !existingTasks[k]; // was false = was active
+      result[k] = wasAlreadyActive ? existingTasks[k] : false;
     } else {
       // Task not selected for this appointment → mark as N/A (true).
       result[k] = true;

@@ -139,13 +139,11 @@ export default function TaskBadge({
             <path d="M20 6L9 17l-5-5" />
           </svg>
         ) : (
-          <span className="w-5 h-5 flex items-center justify-center">
-            <img
-              src={config.imgSrc}
-              alt={config.label}
-              className="w-full h-full object-contain"
-            />
-          </span>
+          <img
+            src={config.imgSrc}
+            alt={config.label}
+            className="w-5 h-5 object-contain"
+          />
         )}
       </button>
     );
@@ -185,13 +183,11 @@ export default function TaskBadge({
             <path d="M20 6L9 17l-5-5" />
           </svg>
         ) : (
-          <span className="w-6 h-6 flex items-center justify-center">
-            <img
-              src={config.imgSrc}
-              alt={config.label}
-              className="w-full h-full object-contain"
-            />
-          </span>
+          <img
+            src={config.imgSrc}
+            alt={config.label}
+            className="w-6 h-6 object-contain"
+          />
         )}
       </button>
       {showLabel && (
